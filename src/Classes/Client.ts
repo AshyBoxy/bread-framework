@@ -13,6 +13,8 @@ import LevelDB from "./LevelDB";
 import { Snowflake } from "discord-api-types";
 
 class CustomClient extends Client {
+    static BuiltInEventPath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "Events");
+
     config: IConfig;
     modules: IModule[];
     commands: Collection<string, Command> = new Collection();
@@ -39,10 +41,15 @@ class CustomClient extends Client {
 
 
         const events: string[] = [];
-        const eventFiles = readdirSync(this.config.eventsPath).filter((x: string) => x.endsWith(".js"));
+        type eventFile = { path: string, dir: string; };
+        const eventFiles: eventFile[] = [
+            ...readdirSync(this.config.eventsPath).map((x) => ({ path: x, dir: this.config.eventsPath })),
+            ...readdirSync(CustomClient.BuiltInEventPath).map((x) => ({ path: x, dir: CustomClient.BuiltInEventPath }))
+        ].filter((x: eventFile) => x.path.endsWith(".js"));
+        this.logger.debug(eventFiles.map((x) => x.path));
 
         for (let i = 0; i < eventFiles.length; i++) {
-            const event: EventHandler<keyof ClientEvents> = (await import(path.join(this.config.eventsPath, eventFiles[i]))).default;
+            const event: EventHandler<keyof ClientEvents> = (await import(path.join(eventFiles[i].dir, eventFiles[i].path))).default;
             this.on(event.name, event.execute(this));
             events.push(event.name);
         }

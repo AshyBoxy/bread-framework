@@ -64,10 +64,7 @@
         "operator-assignment": "error",
         "arrow-body-style": [
             "error",
-            "as-needed",
-            {
-                "requireReturnForObjectLiteral": true
-            }
+            "as-needed"
         ],
         "arrow-parens": "error",
         "no-var": "error",
