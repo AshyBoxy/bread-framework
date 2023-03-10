@@ -1,11 +1,11 @@
 {
     "parserOptions": {
-        "ecmaVersion": 2021,
+        "ecmaVersion": 2022,
         "sourceType": "module"
     },
     "env": {
         "node": true,
-        "es2021": true
+        "es2022": true
     },
     "root": true,
     "parser": "@typescript-eslint/parser",
@@ -13,8 +13,7 @@
         "@typescript-eslint"
     ],
     "extends": [
-        "eslint:recommended",
-        "plugin:@typescript-eslint/recommended"
+        "eslint:recommended"
     ],
     "rules": {
         "no-console": "error",
@@ -85,28 +84,40 @@
         ],
         // typescript rules
         "comma-spacing": "off",
-        "quotes": "off",
-        "@typescript-eslint/explicit-function-return-type": "error",
-        "@typescript-eslint/comma-spacing": "error",
-        "@typescript-eslint/quotes": [
-            "error",
-            "double",
-            {
-                "avoidEscape": true
+        "quotes": "off"
+    },
+    "overrides": [
+        {
+            "files": [
+                "*.ts"
+            ],
+            "extends": [
+                "plugin:@typescript-eslint/recommended"
+            ],
+            "rules": {
+                "@typescript-eslint/explicit-function-return-type": "error",
+                "@typescript-eslint/comma-spacing": "error",
+                "@typescript-eslint/quotes": [
+                    "error",
+                    "double",
+                    {
+                        "avoidEscape": true
+                    }
+                ],
+                "@typescript-eslint/no-var-requires": "off",
+                "@typescript-eslint/no-namespace": "off",
+                "no-shadow": "off",
+                "@typescript-eslint/no-shadow": [
+                    "error"
+                ],
+                "@typescript-eslint/consistent-type-assertions": [
+                    "error",
+                    {
+                        "assertionStyle": "angle-bracket",
+                        "objectLiteralTypeAssertions": "never"
+                    }
+                ]
             }
-        ],
-        "@typescript-eslint/no-var-requires": "off",
-        "@typescript-eslint/no-namespace": "off",
-        "no-shadow": "off",
-        "@typescript-eslint/no-shadow": [
-            "error"
-        ],
-        "@typescript-eslint/consistent-type-assertions": [
-            "error",
-            {
-                "assertionStyle": "angle-bracket",
-                "objectLiteralTypeAssertions": "never"
-            }
-        ]
-    }
+        }
+    ]
 }
