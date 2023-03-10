@@ -10,9 +10,10 @@ import { logger } from "../Utils";
 import Command from "./Command";
 import EventHandler from "./EventHandler";
 import LevelDB from "./LevelDB";
-import { Snowflake } from "discord-api-types";
+import { Snowflake } from "discord-api-types/v10";
 
-class CustomClient extends Client {
+// what is going on with the discord.js typings
+class CustomClient extends Client<true> {
     static BuiltInEventPath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "Events");
 
     config: IConfig;
