@@ -3,7 +3,7 @@ import { ClientOptions } from "discord.js";
 interface ClientConfig {
     prefix: string;
     token: string;
-    winston: {
+    logging: {
         webhook: {
             "id": string;
             "token": string;

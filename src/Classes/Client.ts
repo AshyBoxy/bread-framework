@@ -1,19 +1,30 @@
+import { Snowflake } from "discord-api-types/v10";
 import { Client, ClientEvents, Collection } from "discord.js";
 import { readdirSync } from "fs";
 import * as path from "path";
-import IUserData from "../Interfaces/UserData";
 import IConfig from "../Interfaces/Config";
 import IGuildConfig from "../Interfaces/GuildConfig";
+import ILogger from "../Interfaces/Logger";
 import IModule from "../Interfaces/Module";
+import IUserData from "../Interfaces/UserData";
 import STRINGS from "../strings";
 import { logger } from "../Utils";
 import Command from "./Command";
 import EventHandler from "./EventHandler";
-import LevelDB from "./LevelDB";
-import { Snowflake } from "discord-api-types/v10";
+import BreadDB from "./BreadDB";
+import BreadMessage from "../Interfaces/Message";
 
-// what is going on with the discord.js typings
-class CustomClient extends Client<true> {
+type HooksType = {
+    messageCreate?: {
+        immediately?: ((bot: BreadClient, msg: BreadMessage) => Promise<number> | number)[];
+        beforeCommand?: ((bot: BreadClient, msg: BreadMessage, cmd: string, args: string[], prefix: string) => Promise<number> | number)[];
+    };
+};
+
+// using true here basically makes typescript assume the bot is ready
+// meaning it won't enforce type checking
+// this probably shouldn't be left like this(?)
+class BreadClient extends Client<true> {
     static BuiltInEventPath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "Events");
 
     config: IConfig;
@@ -21,19 +32,22 @@ class CustomClient extends Client<true> {
     commands: Collection<string, Command> = new Collection();
     aliases: Collection<string, string> = new Collection();
 
-    guildConfigs: LevelDB<IGuildConfig>;
-    userData: LevelDB<IUserData>;
+    guildConfigs: BreadDB<IGuildConfig>;
+    userData: BreadDB<IUserData>;
 
-    logger = logger;
+    logger: ILogger;
 
     constructor(
-        config: IConfig, modules: IModule[], guildConfigs: LevelDB<IGuildConfig>, userData: LevelDB<IUserData>
+        config: IConfig, modules: IModule[], guildConfigs: BreadDB<IGuildConfig>, userData: BreadDB<IUserData>,
+        public hooks?: HooksType
     ) {
         super(config);
         this.config = config;
         this.modules = modules;
         this.guildConfigs = guildConfigs;
         this.userData = userData;
+
+        this.logger = new logger(this);
     }
 
     async setup(): Promise<void> {
@@ -45,7 +59,7 @@ class CustomClient extends Client<true> {
         type eventFile = { path: string, dir: string; };
         const eventFiles: eventFile[] = [
             ...readdirSync(this.config.eventsPath).map((x) => ({ path: x, dir: this.config.eventsPath })),
-            ...readdirSync(CustomClient.BuiltInEventPath).map((x) => ({ path: x, dir: CustomClient.BuiltInEventPath }))
+            ...readdirSync(BreadClient.BuiltInEventPath).map((x) => ({ path: x, dir: BreadClient.BuiltInEventPath }))
         ].filter((x: eventFile) => x.path.endsWith(".js"));
         this.logger.debug(eventFiles.map((x) => x.path));
 
@@ -102,14 +116,15 @@ class CustomClient extends Client<true> {
     async shutdown(reason: string): Promise<void> {
         this.logger.info(STRINGS.MAIN.SHUTTING_DOWN(reason));
         await Promise.all([
-            this.guildConfigs.db.close(), this.userData.db.close()
+            this.guildConfigs.db.close(), this.userData.db.close(),
+            this.logger.flush?.()
         ]);
         this.destroy();
         process.exit();
     }
 }
 
-export default CustomClient;
+export default BreadClient;
 
 function defaultData(): IUserData {
     return {

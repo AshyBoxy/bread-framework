@@ -1,7 +1,7 @@
 import levelup, { LevelUp } from "levelup";
 import leveldown from "leveldown";
 
-class LevelDB<valueType>{
+class BreadDB<valueType>{
     db: LevelUp;
 
     constructor(path: string) {
@@ -25,4 +25,4 @@ class LevelDB<valueType>{
     set = this.put;
 }
 
-export default LevelDB;
+export default BreadDB;

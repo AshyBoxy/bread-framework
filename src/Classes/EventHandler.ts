@@ -1,20 +1,20 @@
 import { ClientEvents, MessageReaction, Partialize, PartialUser, User } from "discord.js";
-import CustomMessage from "../Interfaces/Message";
-import CustomClient from "./Client";
+import BreadMessage from "../Interfaces/Message";
+import BreadClient from "./Client";
 
 // I think there's a better way to do this but I can't find it
-interface CustomMessageReaction extends MessageReaction {
-    message: CustomMessage;
+interface BreadMessageReaction extends MessageReaction {
+    message: BreadMessage;
 }
-type PartialCustomMessageReaction = Partialize<CustomMessageReaction, "count">;
+type PartialBreadMessageReaction = Partialize<BreadMessageReaction, "count">;
 
 interface IEvents extends ClientEvents {
-    messageCreate: [message: CustomMessage];
-    messageReactionAdd: [reaction: CustomMessageReaction | PartialCustomMessageReaction, user: User | PartialUser];
+    messageCreate: [message: BreadMessage];
+    messageReactionAdd: [reaction: BreadMessageReaction | PartialBreadMessageReaction, user: User | PartialUser];
 }
 type Events = keyof IEvents;
 
-type Execute<EventName extends Events> = (bot: CustomClient) => (...args: IEvents[EventName]) => void;
+type Execute<EventName extends Events> = (bot: BreadClient) => (...args: IEvents[EventName]) => void;
 
 class EventHandler<EventName extends Events> {
     execute: Execute<EventName>;

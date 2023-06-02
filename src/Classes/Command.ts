@@ -2,9 +2,9 @@ import { PermissionResolvable } from "discord.js";
 import Client from "./Client";
 import IGeneralCommandData from "../Interfaces/GeneralCommandData";
 import IModule from "../Interfaces/Module";
-import CustomMessage from "../Interfaces/Message";
+import BreadMessage from "../Interfaces/Message";
 
-type run = (bot: Client, message: CustomMessage, args: string[]) => number | void | Promise<number | void>;
+type run = (bot: Client, message: BreadMessage, args: string[]) => number | void | Promise<number | void>;
 
 class Command implements IGeneralCommandData {
 
