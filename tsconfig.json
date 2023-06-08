@@ -1,19 +1,21 @@
 {
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "src/**/*.json"
     ],
     "compilerOptions": {
         "outDir": "dist",
         "allowJs": true,
         "checkJs": true,
         "listEmittedFiles": true,
-        "module": "ES2022",
+        "module": "ESNext",
         "strict": true,
         "noImplicitReturns": true,
         "noUnusedLocals": true,
         "removeComments": true,
-        "moduleResolution": "node",
+        "moduleResolution": "node", // should this be updated to nodenext, as well as removing loader.js later?
         "target": "ES2022",
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true
     }
 }

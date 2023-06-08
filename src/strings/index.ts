@@ -145,6 +145,14 @@ const strings: Record<string, IStrings> = {
 };
 const selectedName = "STRINGS";
 // const selectedName = "TEST";
-const STRINGS = strings[selectedName];
+// const STRINGS = strings[selectedName];
+const oldStrings = strings[selectedName];
+
+import newstrings from "./newstrings";
+
+// we have both old and new systems on the same object for now
+const STRINGS = Object.assign({}, oldStrings, newstrings);
 
 export default STRINGS;
+
+// export { default } from "./newstrings";

@@ -13,11 +13,12 @@ import Command from "./Command";
 import EventHandler from "./EventHandler";
 import BreadDB from "./BreadDB";
 import BreadMessage from "../Interfaces/Message";
+import { HOOK_CODES } from "../constants";
 
 type HooksType = {
     messageCreate?: {
-        immediately?: ((bot: BreadClient, msg: BreadMessage) => Promise<number> | number)[];
-        beforeCommand?: ((bot: BreadClient, msg: BreadMessage, cmd: string, args: string[], prefix: string) => Promise<number> | number)[];
+        immediately?: ((bot: BreadClient, msg: BreadMessage) => Promise<HOOK_CODES> | HOOK_CODES)[];
+        beforeCommand?: ((bot: BreadClient, msg: BreadMessage, cmd: string, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
     };
 };
 
@@ -72,6 +73,13 @@ class BreadClient extends Client<true> {
 
 
         const modulesLog: string[] = [];
+
+        const moduleFiles = (<(path: string, opts: object) => string[]>readdirSync)(this.config.commandsPath, { recursive: true }).filter((x) => /module.jso?n?$/.test(x));
+        for (const file of moduleFiles) this.modules.push({
+            path: path.dirname(file),
+            ...(await import(path.join(this.config.commandsPath, file), file.endsWith(".json") ? { assert: { type: "json" } } : undefined)).default
+        });
+
         for (let i = 0; i < this.modules.length; i++) {
             const cmdFiles = readdirSync(path.join(this.config.commandsPath, this.modules[i].path)).filter((x: string) => x.endsWith(".js"));
 

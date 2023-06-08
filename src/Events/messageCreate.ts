@@ -1,12 +1,21 @@
 import { EventHandler, IGuildConfig } from "../..";
 import STRINGS from "../../../strings";
-import * as utils from "../../../Utils";
+import { HOOK_CODES } from "../constants";
+import * as utils from "../Utils";
 
-// react, guildConfig(?), and $hi should be in a bread only hook
-// discord utils need to be moved into framework
+// should guildConfig be in a bread only hook?
 
 export default new EventHandler("messageCreate", (bot) => async (msg): Promise<void> => {
-    for (const hook of bot.hooks?.messageCreate?.immediately || []) hook(bot, msg);
+    let hookReturn: HOOK_CODES;
+    for (const hook of bot.hooks?.messageCreate?.immediately || []) switch (hookReturn = await hook(bot, msg)) {
+        case HOOK_CODES.OK:
+        case HOOK_CODES.CONTINUE:
+            break;
+        case HOOK_CODES.STOP:
+            return;
+        default:
+            bot.logger.debug(`unknown hook return "${hookReturn}" for messageCreate.immediately hook ${hook.name || "with unknown name"}`);
+    }
     if (msg.author.bot) return;
 
     let guildConfig: IGuildConfig | undefined;
@@ -37,13 +46,14 @@ export default new EventHandler("messageCreate", (bot) => async (msg): Promise<v
         prefix = "";
     }
 
-    for (const hook of bot.hooks?.messageCreate?.beforeCommand || []) switch (await hook(bot, msg, cmd, args, prefix)) {
-        case 0:
+    for (const hook of bot.hooks?.messageCreate?.beforeCommand || []) switch (hookReturn = await hook(bot, msg, cmd, args, prefix)) {
+        case HOOK_CODES.OK:
+        case HOOK_CODES.CONTINUE:
             break;
-        case 1:
+        case HOOK_CODES.STOP:
             return;
         default:
-            bot.logger.debug(`unknown hook return for hook ${hook.name || "with unknown name"}`);
+            bot.logger.debug(`unknown hook return "${hookReturn}" for messageCreate.beforeCommand hook ${hook.name || "with unknown name"}`);
     }
 
     if (!cmd.startsWith(prefix)) return;
