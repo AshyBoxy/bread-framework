@@ -1,7 +1,7 @@
 import { Guild, GuildMember, User } from "discord.js";
 import { Client } from "..";
 
-async function memberFromMention(guild: Guild | null, arg: string): Promise<GuildMember | null> {
+async function memberFromMention(guild: Guild, arg: string): Promise<GuildMember | null> {
     const id = idFromMention(arg);
     if (!id || !guild) return null;
     const member = await guild.members.fetch(id);

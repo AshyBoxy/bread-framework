@@ -14,4 +14,5 @@ export * as Utils from "./Utils";
 
 export * as constants from "./constants";
 
-export * as newstrings from "./strings/newstrings";
+// export * as newstrings from "./strings/newstrings";
+export { default as newstrings, default as strings, default as Strings } from "./strings/newstrings";

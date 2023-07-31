@@ -13,9 +13,10 @@
         "noImplicitReturns": true,
         "noUnusedLocals": true,
         "removeComments": true,
-        "moduleResolution": "node", // should this be updated to nodenext, as well as removing loader.js later?
+        "moduleResolution": "bundler",
         "target": "ES2022",
         "allowSyntheticDefaultImports": true,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "sourceMap": true
     }
 }

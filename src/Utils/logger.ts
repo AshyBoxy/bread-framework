@@ -28,6 +28,7 @@ class Logger implements ILogger {
         if (extras && Object.keys(extras).length > 0) msg += ` (${JSON.stringify(extras)})`;
         console.log(msg);
 
+        // this feels like it would be buggy
         const id = Object.keys(this.unlogged).length + 1;
         const promise = this.webhook?.send(`>>> ${msg}`).then(() => {
             delete this.unlogged[id];

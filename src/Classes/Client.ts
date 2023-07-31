@@ -27,6 +27,7 @@ type HooksType = {
 // this probably shouldn't be left like this(?)
 class BreadClient extends Client<true> {
     static BuiltInEventPath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "Events");
+    static BuiltInCommandsPath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "Commands");
 
     config: IConfig;
     modules: IModule[];
@@ -74,18 +75,21 @@ class BreadClient extends Client<true> {
 
         const modulesLog: string[] = [];
 
-        const moduleFiles = (<(path: string, opts: object) => string[]>readdirSync)(this.config.commandsPath, { recursive: true }).filter((x) => /module.jso?n?$/.test(x));
+        const moduleFiles = [
+            ...(<(path: string, opts: object) => string[]>readdirSync)(this.config.commandsPath, { recursive: true }).filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(this.config.commandsPath, x)),
+            ...(<(path: string, opts: object) => string[]>readdirSync)(BreadClient.BuiltInCommandsPath, { recursive: true }).filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(BreadClient.BuiltInCommandsPath, x))
+        ];
         for (const file of moduleFiles) this.modules.push({
             path: path.dirname(file),
-            ...(await import(path.join(this.config.commandsPath, file), file.endsWith(".json") ? { assert: { type: "json" } } : undefined)).default
+            ...(await import(file, file.endsWith(".json") ? { assert: { type: "json" } } : undefined)).default
         });
 
         for (let i = 0; i < this.modules.length; i++) {
-            const cmdFiles = readdirSync(path.join(this.config.commandsPath, this.modules[i].path)).filter((x: string) => x.endsWith(".js"));
+            const cmdFiles = readdirSync(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath, this.modules[i].path)).filter((x: string) => x.endsWith(".js"));
 
             const commands: string[] = [];
             for (let x = 0; x < cmdFiles.length; x++) {
-                const cmd: Command = (await import(path.join(this.config.commandsPath, this.modules[i].path, cmdFiles[x]))).default;
+                const cmd: Command = (await import(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath, this.modules[i].path, cmdFiles[x]))).default;
                 if (!cmd?.run || !cmd?.name) {
                     warnings.push(STRINGS.CLASSES.CLIENT.WARNINGS.COMMAND(cmdFiles[x].split(".js")[0], this.modules[i].name));
                     continue;

@@ -16,12 +16,27 @@ class Strings {
     static format = (str: string, ...args: unknown[]): string => str.replace(/{(\d+)(\..*?)?}/g, (m, num, tar) =>
         tar?.split(".").slice(1).reduce((acc: Record<string, unknown> | undefined, cur: string) => acc && acc[cur], args[num]) || args[num] || m);
 
-    constructor(public source: Record<string, string> = strings) {
+    constructor(public sources: Record<string, string>[] = [strings]) {
         this.get = this.getString;
     }
 
+    addSource = (source: Record<string, string>): this => {
+        this.sources.unshift(source);
+        return this;
+    };
 
-    getString = (str: string, ...args: unknown[]): string => this.source[str] && Strings.format(strings[str], ...args) || str;
+    clearSources = (): this => {
+        this.sources = [strings];
+        return this;
+    };
+
+    static addSource = Strings.instance.addSource;
+    static clearSources = Strings.instance.clearSources;
+
+    getString = (str: string, ...args: unknown[]): string => {
+        const source = this.sources.find((x) => x[str]);
+        return source?.[str] && Strings.format(source[str], ...args) || str;
+    };
     get: typeof getString;
 
     static getString = Strings.instance.getString;
