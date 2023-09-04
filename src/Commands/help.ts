@@ -3,7 +3,7 @@ import Command from "../Classes/Command";
 import BreadEmbed from "../Classes/BreadEmbed";
 import IGuildConfig from "../Interfaces/GuildConfig";
 
-export default new Command(async (bot, msg, args) => {
+const helpCmd = new Command(async (bot, msg, args) => {
     const input = args.join(" ").toLowerCase();
     const command = bot.commands.get(input) || bot.commands.get(<string>bot.aliases.get(input));
     const module = bot.modules.find((x) => x.name.toLowerCase() === input);
@@ -19,7 +19,7 @@ export default new Command(async (bot, msg, args) => {
     if (module) {
         for (const cmd of bot.commands.values()) if (cmd.module === module) embed.addField(cmd.name, cmd.info, true);
         embed.setTitle(`${module.name} Help`)
-            .setFooter(`Use '${prefix}help <command>' for more info on a command`);
+            .setFooter(`Use '${prefix}${helpCmd.name} <command>' for more info on a command`);
     } else if (command) {
         embed.setTitle(`${msg.guild?.members.me?.displayName || bot.user?.username} Help`)
             .setDescription(command.name)
@@ -42,3 +42,5 @@ export default new Command(async (bot, msg, args) => {
     usage: "help [module|command]",
     aliases: ["h"]
 });
+
+export default helpCmd;

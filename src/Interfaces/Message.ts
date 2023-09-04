@@ -7,6 +7,6 @@ type ReplaceReturnType<T extends (...a: any) => any, TNewReturn> = (...a: Parame
 // following BreadClient's naming scheme
 export default interface BreadMessage extends Message {
     client: BreadClient;
-    channel: Exclude<Message["channel"], StageChannel>;
+    channel: Exclude<Message["channel"], StageChannel>; // reasons
     fetch: ReplaceReturnType<(force?: boolean) => Promise<Message>, Promise<BreadMessage>>;
 }

@@ -1,3 +1,5 @@
+// import uwuify from "../../../Utils/uwuify";
+
 const strings: Record<string, string> = (await import("./default.json", { assert: { type: "json" } })).default;
 
 // const format = (str: string, ...args: unknown[]): string => str.replace(/{(\d+)(\..*?)?}/g, (m, num, tar) =>
@@ -35,7 +37,10 @@ class Strings {
 
     getString = (str: string, ...args: unknown[]): string => {
         const source = this.sources.find((x) => x[str]);
-        return source?.[str] && Strings.format(source[str], ...args) || str;
+        // return;
+        const a = source?.[str] && Strings.format(source[str], ...args) || str;
+        // return uwuify(a);
+        return a;
     };
     get: typeof getString;
 
