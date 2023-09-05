@@ -25,6 +25,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: build
+          name: bread-framework.tar.gz
           path: bread-framework.tar.gz
         if: ${{ ! failure() }}
