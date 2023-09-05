@@ -1,5 +1,4 @@
-import { EventHandler, IGuildConfig } from "../..";
-import STRINGS from "../../../strings";
+import { EventHandler, IGuildConfig, strings } from "../..";
 import { HOOK_CODES } from "../constants";
 import * as utils from "../Utils";
 
@@ -20,14 +19,14 @@ export default new EventHandler("messageCreate", (bot) => async (msg): Promise<v
 
     let guildConfig: IGuildConfig | undefined;
     if (msg.guild) {
-        guildConfig = await bot.guildConfigs.get(msg.guild.id);
+        guildConfig = await bot.dbs.guildConfigs.get(msg.guild.id);
         if (!guildConfig) {
             guildConfig = {
                 prefix: bot.config.prefix,
                 disabledCommands: [],
                 reactionRoles: []
             };
-            bot.guildConfigs.set(msg.guild.id, guildConfig);
+            bot.dbs.guildConfigs.set(msg.guild.id, guildConfig);
         }
     }
 
@@ -40,7 +39,7 @@ export default new EventHandler("messageCreate", (bot) => async (msg): Promise<v
     if (!cmd) return;
 
     if (new RegExp(`^<@!?${bot.user?.id}>$`).test(cmd)) {
-        if (!msgArr[1]) return msg.channel.send(STRINGS.EVENTS.MESSAGE.PREFIX(prefix)), undefined;
+        if (!msgArr[1]) return msg.channel.send(strings.get("events.message.prefix", prefix)), undefined;
         cmd = msgArr[1].toLowerCase();
         args = msgArr.slice(2);
         prefix = "";

@@ -9,5 +9,6 @@
     "utils.discord.dm_only": "Cette commande ne peut être utilisée que dans les DM !",
     "utils.discord.bad_permissions": "Vous n'avez pas les autorisations nécessaires pour utiliser cette commande !",
     "utils.discord.bot_permissions": "Je n'ai pas les autorisations nécessaires pour utiliser cette commande !",
-    "events.ready.online": "En ligne en tant que {0}"
+    "events.ready.online": "En ligne en tant que {0}",
+    "events.message.prefix": "Mon préfixe est `{0}`"
 }

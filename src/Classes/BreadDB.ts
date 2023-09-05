@@ -1,7 +1,8 @@
 import levelup, { LevelUp } from "levelup";
 import leveldown from "leveldown";
+import IDatabase from "../Interfaces/Database";
 
-class BreadDB<valueType>{
+class BreadDB<valueType> implements IDatabase<valueType>{
     db: LevelUp;
 
     constructor(path: string) {
@@ -23,6 +24,8 @@ class BreadDB<valueType>{
         await this.db.put(key, data);
     }
     set = this.put;
+
+    close = (): Promise<void> => this.db.close();
 }
 
 export default BreadDB;

@@ -1,31 +1,53 @@
-import { Snowflake } from "discord-api-types/v10";
+// import { Snowflake } from "discord-api-types/v10";
 import { Client, ClientEvents, Collection } from "discord.js";
 import { readdirSync } from "fs";
 import * as path from "path";
 import IConfig from "../Interfaces/Config";
-import IGuildConfig from "../Interfaces/GuildConfig";
+// import IGuildConfig from "../Interfaces/GuildConfig";
 import ILogger from "../Interfaces/Logger";
 import IModule from "../Interfaces/Module";
-import IUserData from "../Interfaces/UserData";
+// import IUserData from "../Interfaces/UserData";
 import STRINGS from "../strings";
 import { logger } from "../Utils";
 import Command from "./Command";
 import EventHandler from "./EventHandler";
-import BreadDB from "./BreadDB";
 import BreadMessage from "../Interfaces/Message";
 import { HOOK_CODES } from "../constants";
+import IGuildConfig from "../Interfaces/GuildConfig";
+import IDatabase from "../Interfaces/Database";
 
-type HooksType = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type HooksType<Databases extends Record<string, IDatabase<any>>> = {
     messageCreate?: {
-        immediately?: ((bot: BreadClient, msg: BreadMessage) => Promise<HOOK_CODES> | HOOK_CODES)[];
-        beforeCommand?: ((bot: BreadClient, msg: BreadMessage, cmd: string, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
+        immediately?: ((bot: BreadClient<Databases>, msg: BreadMessage) => Promise<HOOK_CODES> | HOOK_CODES)[];
+        beforeCommand?: ((bot: BreadClient<Databases>, msg: BreadMessage, cmd: string, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
     };
 };
+
+type DBRecord<K extends object> = {
+    [P in keyof K]: K[P]
+};
+type RequiredDBs = {
+    guildConfigs: IDatabase<IGuildConfig>;
+};
+
+class MapDB<valueType> implements IDatabase<valueType> {
+    #map = new Map<string, valueType>();
+    get(key: string): valueType | undefined {
+        return this.#map.get(key);
+    }
+    put(key: string, value: valueType): void {
+        this.#map.set(key, value);
+    }
+    set = this.put;
+    close = (): Promise<void> => new Promise((r) => r());
+}
 
 // using true here basically makes typescript assume the bot is ready
 // meaning it won't enforce type checking
 // this probably shouldn't be left like this(?)
-class BreadClient extends Client<true> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<string, IDatabase<unknown>>> extends Client<true> {
     static BuiltInEventPath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "Events");
     static BuiltInCommandsPath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "Commands");
 
@@ -34,22 +56,27 @@ class BreadClient extends Client<true> {
     commands: Collection<string, Command> = new Collection();
     aliases: Collection<string, string> = new Collection();
 
-    guildConfigs: BreadDB<IGuildConfig>;
-    userData: BreadDB<IUserData>;
+    // guildConfigs: BreadDB<IGuildConfig>;
+    // userData: BreadDB<IUserData>;
+    dbs: DBRecord<Databases & RequiredDBs>;
 
     logger: ILogger;
 
     constructor(
-        config: IConfig, modules: IModule[], guildConfigs: BreadDB<IGuildConfig>, userData: BreadDB<IUserData>,
-        public hooks?: HooksType
+        config: IConfig, modules: IModule[], /*guildConfigs: BreadDB<IGuildConfig>, userData: BreadDB<IUserData>,*/
+        dbs: DBRecord<Databases>, public hooks?: HooksType<Databases>
     ) {
         super(config);
         this.config = config;
         this.modules = modules;
-        this.guildConfigs = guildConfigs;
-        this.userData = userData;
+        // this.guildConfigs = guildConfigs;
+        // this.userData = userData;
+        this.dbs = {
+            ...dbs,
+            guildConfigs: dbs.guildConfigs || new MapDB()
+        };
 
-        this.logger = new logger(this);
+        this.logger = new logger(<BreadClient>this);
     }
 
     async setup(): Promise<void> {
@@ -67,7 +94,7 @@ class BreadClient extends Client<true> {
 
         for (let i = 0; i < eventFiles.length; i++) {
             const event: EventHandler<keyof ClientEvents> = (await import(path.join(eventFiles[i].dir, eventFiles[i].path))).default;
-            this.on(event.name, event.execute(this));
+            this.on(event.name, event.execute(<BreadClient>this));
             events.push(event.name);
         }
         infos.push(STRINGS.CLASSES.CLIENT.LOADED.EVENTS(events));
@@ -109,26 +136,27 @@ class BreadClient extends Client<true> {
         if (warnings.length > 0) this.logger.warn(warnings.join("\n"));
     }
 
-    async getUserData(id: Snowflake): Promise<IUserData> {
-        let userData = await this.userData.get(id);
-        const dataCopy: IUserData = JSON.parse(JSON.stringify(userData || {}));
-        userData = defaultData();
-        Object.assign(userData, dataCopy);
+    // async getUserData(id: Snowflake): Promise<IUserData> {
+    //     let userData = await this.userData.get(id);
+    //     const dataCopy: IUserData = JSON.parse(JSON.stringify(userData || {}));
+    //     userData = defaultData();
+    //     Object.assign(userData, dataCopy);
 
-        return userData;
-    }
+    //     return userData;
+    // }
 
-    async setUserData(id: Snowflake, data: IUserData): Promise<void> {
-        await this.userData.set(id, data);
-        return;
-    }
+    // async setUserData(id: Snowflake, data: IUserData): Promise<void> {
+    //     await this.userData.set(id, data);
+    //     return;
+    // }
 
 
 
     async shutdown(reason: string): Promise<void> {
         this.logger.info(STRINGS.MAIN.SHUTTING_DOWN(reason));
         await Promise.all([
-            this.guildConfigs.db.close(), this.userData.db.close(),
+            // this.guildConfigs.db.close(), this.userData.db.close()
+            ...Object.values(this.dbs).map((db: IDatabase<unknown>) => db.close()),
             this.logger.flush?.()
         ]);
         this.destroy();
@@ -138,14 +166,14 @@ class BreadClient extends Client<true> {
 
 export default BreadClient;
 
-function defaultData(): IUserData {
-    return {
-        test: "default",
-        breadCollection: {
-            nonShiny: 0,
-            shiny: 0,
-            squareShiny: 0,
-            golden: 0
-        }
-    };
-}
+// function defaultData(): IUserData {
+//     return {
+//         test: "default",
+//         breadCollection: {
+//             nonShiny: 0,
+//             shiny: 0,
+//             squareShiny: 0,
+//             golden: 0
+//         }
+//     };
+// }
