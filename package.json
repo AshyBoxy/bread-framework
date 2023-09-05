@@ -10,7 +10,7 @@
   "typings": "src/index.d.ts",
   "scripts": {
     "build": "rm -rf dist/ ; tsc",
-    "check": "eslint . ; tsc --noEmit",
+    "check": "eslint . && tsc --noEmit",
     "test": "npm run check"
   },
   "keywords": [],
