@@ -22,9 +22,8 @@ export default new EventHandler("messageCreate", (bot) => async (msg): Promise<v
         guildConfig = await bot.dbs.guildConfigs.get(msg.guild.id);
         if (!guildConfig) {
             guildConfig = {
-                prefix: bot.config.prefix,
-                disabledCommands: [],
-                reactionRoles: []
+                prefix: bot.config.prefix || "!",
+                disabledCommands: []
             };
             bot.dbs.guildConfigs.set(msg.guild.id, guildConfig);
         }
@@ -34,12 +33,12 @@ export default new EventHandler("messageCreate", (bot) => async (msg): Promise<v
     let cmd = msgArr[0].toLowerCase();
     let args = msgArr.slice(1);
 
-    let prefix = guildConfig?.prefix || bot.config.prefix;
+    let prefix = guildConfig?.prefix || bot.config.prefix || "!";
 
     if (!cmd) return;
 
     if (new RegExp(`^<@!?${bot.user?.id}>$`).test(cmd)) {
-        if (!msgArr[1]) return msg.channel.send(strings.get("events.message.prefix", prefix)), undefined;
+        if (!msgArr[1]) return msg.channel.send(strings.get("bread_framework.events.message.prefix", prefix)), undefined;
         cmd = msgArr[1].toLowerCase();
         args = msgArr.slice(2);
         prefix = "";

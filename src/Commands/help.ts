@@ -34,7 +34,8 @@ const helpCmd = new Command(async (bot, msg, args) => {
         for (const modulei of bot.modules) embed.addField(modulei.name, modulei.description, true);
     } else embed.setTitle(`Command or Module "${args[0]}" could not be found!`);
 
-    msg.channel.send({ embeds: [embed] });
+    // msg.channel.send({ embeds: [embed] });
+    msg.reply({ embeds: [embed] });
 }, {
     name: "Help",
     info: "Shows help",

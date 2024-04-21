@@ -1,20 +1,17 @@
-// import { Snowflake } from "discord-api-types/v10";
-import { Client, ClientEvents, Collection } from "discord.js";
+import { APIUser, Client, ClientEvents, Collection, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
 import { readdirSync } from "fs";
 import * as path from "path";
 import IConfig from "../Interfaces/Config";
-// import IGuildConfig from "../Interfaces/GuildConfig";
+import IDatabase from "../Interfaces/Database";
+import IGuildConfig from "../Interfaces/GuildConfig";
 import ILogger from "../Interfaces/Logger";
+import BreadMessage from "../Interfaces/Message";
 import IModule from "../Interfaces/Module";
-// import IUserData from "../Interfaces/UserData";
-import STRINGS from "../strings";
 import { logger } from "../Utils";
+import { HOOK_CODES } from "../constants";
 import Command from "./Command";
 import EventHandler from "./EventHandler";
-import BreadMessage from "../Interfaces/Message";
-import { HOOK_CODES } from "../constants";
-import IGuildConfig from "../Interfaces/GuildConfig";
-import IDatabase from "../Interfaces/Database";
+import { strings } from "..";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HooksType<Databases extends Record<string, IDatabase<any>>> = {
@@ -56,21 +53,16 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
     commands: Collection<string, Command> = new Collection();
     aliases: Collection<string, string> = new Collection();
 
-    // guildConfigs: BreadDB<IGuildConfig>;
-    // userData: BreadDB<IUserData>;
     dbs: DBRecord<Databases & RequiredDBs>;
 
     logger: ILogger;
 
     constructor(
-        config: IConfig, modules: IModule[], /*guildConfigs: BreadDB<IGuildConfig>, userData: BreadDB<IUserData>,*/
-        dbs: DBRecord<Databases>, public hooks?: HooksType<Databases>
+        config: IConfig, dbs: DBRecord<Databases>, modules: IModule[] = [], public hooks?: HooksType<Databases>
     ) {
         super(config);
         this.config = config;
         this.modules = modules;
-        // this.guildConfigs = guildConfigs;
-        // this.userData = userData;
         this.dbs = {
             ...dbs,
             guildConfigs: dbs.guildConfigs || new MapDB()
@@ -87,23 +79,22 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         const events: string[] = [];
         type eventFile = { path: string, dir: string; };
         const eventFiles: eventFile[] = [
-            ...readdirSync(this.config.eventsPath).map((x) => ({ path: x, dir: this.config.eventsPath })),
+            ...this.config.eventsPath ? readdirSync(this.config.eventsPath).map((x) => ({ path: x, dir: <string>this.config.eventsPath })) : [],
             ...readdirSync(BreadClient.BuiltInEventPath).map((x) => ({ path: x, dir: BreadClient.BuiltInEventPath }))
         ].filter((x: eventFile) => x.path.endsWith(".js"));
-        this.logger.debug(eventFiles.map((x) => x.path));
 
         for (let i = 0; i < eventFiles.length; i++) {
             const event: EventHandler<keyof ClientEvents> = (await import(path.join(eventFiles[i].dir, eventFiles[i].path))).default;
             this.on(event.name, event.execute(<BreadClient>this));
             events.push(event.name);
         }
-        infos.push(STRINGS.CLASSES.CLIENT.LOADED.EVENTS(events));
+        infos.push(strings.get("bread_framework.classes.breadclient.events", events.join(", ")));
 
 
         const modulesLog: string[] = [];
 
         const moduleFiles = [
-            ...(<(path: string, opts: object) => string[]>readdirSync)(this.config.commandsPath, { recursive: true }).filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(this.config.commandsPath, x)),
+            ...this.config.commandsPath ? (<(path: string, opts: object) => string[]>readdirSync)(this.config.commandsPath, { recursive: true }).filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(<string>this.config.commandsPath, x)) : [],
             ...(<(path: string, opts: object) => string[]>readdirSync)(BreadClient.BuiltInCommandsPath, { recursive: true }).filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(BreadClient.BuiltInCommandsPath, x))
         ];
         for (const file of moduleFiles) this.modules.push({
@@ -112,13 +103,13 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         });
 
         for (let i = 0; i < this.modules.length; i++) {
-            const cmdFiles = readdirSync(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath, this.modules[i].path)).filter((x: string) => x.endsWith(".js"));
+            const cmdFiles = readdirSync(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath || "", this.modules[i].path)).filter((x: string) => x.endsWith(".js"));
 
             const commands: string[] = [];
             for (let x = 0; x < cmdFiles.length; x++) {
-                const cmd: Command = (await import(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath, this.modules[i].path, cmdFiles[x]))).default;
+                const cmd: Command = (await import(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath || "", this.modules[i].path, cmdFiles[x]))).default;
                 if (!cmd?.run || !cmd?.name) {
-                    warnings.push(STRINGS.CLASSES.CLIENT.WARNINGS.COMMAND(cmdFiles[x].split(".js")[0], this.modules[i].name));
+                    warnings.push(strings.get("bread_framework.classes.breadclient.commandwarning", cmdFiles[x].split(".js")[0], this.modules[i].name));
                     continue;
                 }
                 cmd.module = this.modules[i];
@@ -129,31 +120,15 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
             }
             modulesLog.push(`${this.modules[i].name} (${commands.join(", ")})`);
         }
-        infos.push(STRINGS.CLASSES.CLIENT.LOADED.MODULES(modulesLog));
+        infos.push(strings.get("bread_framework.classes.breadclient.modules", modulesLog.join("; ")));
 
 
         if (infos.length > 0) this.logger.info(infos.join("\n"));
         if (warnings.length > 0) this.logger.warn(warnings.join("\n"));
     }
 
-    // async getUserData(id: Snowflake): Promise<IUserData> {
-    //     let userData = await this.userData.get(id);
-    //     const dataCopy: IUserData = JSON.parse(JSON.stringify(userData || {}));
-    //     userData = defaultData();
-    //     Object.assign(userData, dataCopy);
-
-    //     return userData;
-    // }
-
-    // async setUserData(id: Snowflake, data: IUserData): Promise<void> {
-    //     await this.userData.set(id, data);
-    //     return;
-    // }
-
-
-
     async shutdown(reason: string): Promise<void> {
-        this.logger.info(STRINGS.MAIN.SHUTTING_DOWN(reason));
+        this.logger.info(strings.get("bread_framework.classes.breadclient.shutting_down", reason));
         await Promise.all([
             // this.guildConfigs.db.close(), this.userData.db.close()
             ...Object.values(this.dbs).map((db: IDatabase<unknown>) => db.close()),
@@ -162,18 +137,33 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         this.destroy();
         process.exit();
     }
+
+    // eslint-disable-next-line require-await
+    async publishCommands(guildIds: string[] = []): Promise<void> {
+        this.logger.info("Publishing slash commands");
+        if (!this.config.token) throw new Error("No token provided");
+        const rest = new REST().setToken(this.config.token);
+
+        const clientId: string | undefined = (<APIUser | null>await rest.get(Routes.user()))?.id;
+        if (!clientId) throw new Error("Unable to get clientId");
+        // this.logger.info(`My client id is ${clientId}`);
+
+        if (guildIds.length > 0) {
+            let guilds: unknown[] | string = guildIds.map(async (x) => ((<Record<string, string>>(await rest.get(Routes.guild(x)))).name));
+            for (let i = 0; i < guilds.length; i++) guilds[i] = await guilds[i];
+            guilds = guilds.join(", ");
+            this.logger.debug(`Publishing commands for guilds: ${guilds}`);
+
+            const cmds: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
+            this.commands.forEach((x) => {
+                if (x.slashCommand.name === "ping")
+                    cmds.push(x.slashCommand.toJSON());
+            });
+            this.logger.info(`Publishing commands: ${cmds.map((x) => x.name).join(", ")}`);
+            for (const g of guildIds) await rest.put(Routes.applicationGuildCommands(clientId, g), { body: cmds });
+        } else
+            this.logger.debug("Publishing commands globally");
+    }
 }
 
 export default BreadClient;
-
-// function defaultData(): IUserData {
-//     return {
-//         test: "default",
-//         breadCollection: {
-//             nonShiny: 0,
-//             shiny: 0,
-//             squareShiny: 0,
-//             golden: 0
-//         }
-//     };
-// }

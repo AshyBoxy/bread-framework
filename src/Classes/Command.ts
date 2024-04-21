@@ -1,10 +1,10 @@
-import { PermissionResolvable } from "discord.js";
+import { ChatInputCommandInteraction, PermissionResolvable, SlashCommandBuilder, TextBasedChannel } from "discord.js";
 import Client from "./Client";
 import IGeneralCommandData from "../Interfaces/GeneralCommandData";
 import IModule from "../Interfaces/Module";
 import BreadMessage from "../Interfaces/Message";
 
-type run = (bot: Client, message: BreadMessage, args: string[]) => number | void | Promise<number | void>;
+export type run = (bot: Client, message: BreadMessage | (ChatInputCommandInteraction & { channel: TextBasedChannel; }), args: string[]) => number | void | Promise<number | void>;
 
 class Command implements IGeneralCommandData {
 
@@ -19,6 +19,8 @@ class Command implements IGeneralCommandData {
     dmOnly: boolean;
     permission: PermissionResolvable;
     botPermission: PermissionResolvable;
+
+    slashCommand: SlashCommandBuilder;
 
     module: IModule = {
         name: "None",
@@ -38,6 +40,11 @@ class Command implements IGeneralCommandData {
         this.dmOnly = data.dmOnly || false;
         this.permission = data.permission || [];
         this.botPermission = data.botPermission || [];
+
+        this.slashCommand = new SlashCommandBuilder()
+            .setName(this.name.toLowerCase())
+            .setDescription(this.info)
+            .setDMPermission(!this.dmOnly);
     }
 }
 

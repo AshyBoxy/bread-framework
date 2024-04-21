@@ -5,20 +5,20 @@ import ILogger from "../Interfaces/Logger";
 
 class Logger implements ILogger {
     private webhook?: WebhookClient;
-    private unlogged: Record<number, Promise<unknown>>;
+    #unlogged: Record<number, Promise<unknown>>;
 
     constructor(bot?: BreadClient) {
-        if (bot?.config.logging.webhook) this.webhook = new WebhookClient(
+        if (bot?.config.logging?.webhook) this.webhook = new WebhookClient(
             { id: bot.config.logging.webhook.id, token: bot.config.logging.webhook.token },
             { allowedMentions: { parse: [] } });
 
-        this.unlogged = [];
+        this.#unlogged = [];
 
         this.debug("hello from logger.ts");
     }
 
     async flush(): Promise<void> {
-        await Promise.all(Object.values(this.unlogged));
+        await Promise.all(Object.values(this.#unlogged));
     }
 
     log(prefix: string, message: string | string[], extras?: Record<string, unknown>): void {
@@ -29,15 +29,15 @@ class Logger implements ILogger {
         console.log(msg);
 
         // this feels like it would be buggy
-        const id = Object.keys(this.unlogged).length + 1;
+        const id = Object.keys(this.#unlogged).length + 1;
         const promise = this.webhook?.send(`>>> ${msg}`).then(() => {
-            delete this.unlogged[id];
+            delete this.#unlogged[id];
         }).catch((err) => {
             delete this.webhook;
             this.error(err.toString ? err.toString() : err);
         });
 
-        if (promise) this.unlogged[id] = promise;
+        if (promise) this.#unlogged[id] = promise;
     }
 
     error(message: string | string[], extras?: Record<string, unknown>): void {

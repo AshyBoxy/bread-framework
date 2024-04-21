@@ -16,7 +16,7 @@ export default interface ICommandData {
     messageOnly?: boolean;
 
     args?: {
-        required?: IInteractionArgument[];
+        required?: IInteractionArgument[]; // yooo this is a cool type
         optional?: IInteractionArgument[];
     };
 

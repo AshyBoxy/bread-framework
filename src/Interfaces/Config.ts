@@ -1,17 +1,16 @@
 import { ClientOptions } from "discord.js";
 
 interface ClientConfig {
-    prefix: string;
-    token: string;
-    logging: {
-        webhook: {
-            "id": string;
-            "token": string;
+    prefix?: string;
+    token?: string;
+    logging?: {
+        webhook?: {
+            id: string;
+            token: string;
         };
     };
-    eventsPath: string;
-    commandsPath: string;
-    dbBasePath: string;
+    eventsPath?: string;
+    commandsPath?: string;
 }
 type IConfig = ClientConfig & ClientOptions;
 

@@ -1,70 +1,77 @@
-import IStrings from "./Strings";
+// import uwuify from "../../../Utils/uwuify";
 
-const _STRINGS: IStrings = {
-    CLASSES: {
-        CLIENT: {
-            LOADED: {
-                EVENTS: (events): string => `loaded events: ${events.join(", ")}`,
-                MODULES: (modules): string => `loaded modules: ${modules.join("; ")}`
-            },
-            WARNINGS: {
-                COMMAND: (cmdName, moduleName): string =>
-                    `command ${cmdName} in module ${moduleName} has no run function or name`
-            }
-        }
-    },
-    MAIN: {
-        SHUTTING_DOWN: (reason): string => `Shutting Down: ${reason}`,
-        SIGINT: "Recieved SIGINT",
-        SIGTERM: "Recieved SIGTERM"
+const defaultStringsPath = "./english.json";
+// const defaultStringsPath = "./french.json";
+const defaultStrings: TranslationData = {
+    name: "breadfw_defaultstrings",
+    data: (await import(defaultStringsPath, { assert: { type: "json" } })).default
+};
+
+
+interface TranslationData {
+    name: string; // the name is used as an id for removing sources, also could be useful in debugging?
+    data: Record<string, string>;
+}
+
+
+class Strings {
+    static format = (str: string, ...args: unknown[]): string => str.replace(/{(\d+)(\..*?)?}/g, (m, num, tar) =>
+        tar?.split(".").slice(1).reduce((acc: Record<string, unknown> | undefined, cur: string) => acc && acc[cur], args[num]) || args[num] || m);
+    static instance = new Strings();
+    static addSource = Strings.instance.addSource;
+    static removeSource = Strings.instance.removeSource;
+    static clearSources = Strings.instance.clearSources;
+    static updateSources = Strings.instance.updateSources;
+    static getString = Strings.instance.getString;
+    static get = Strings.getString;
+
+
+    private flatSources: Record<string, string> = {};
+    private defaultSources: TranslationData[];
+
+
+    constructor(public sources: TranslationData[] = [defaultStrings]) {
+        this.get = this.getString;
+        this.defaultSources = sources;
+        this.updateSources();
     }
-};
 
-// this thing is a mess of ugly hacks
-const _TEST_STRINGS_NOOP = (): void => { /* */ };
-const _TEST_STRINGS_HANDLER = (target: never, property: never): unknown => {
-    // assuming top level isn't a string
-    if (!_STRINGS[property]) return undefined;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let currentObj = <any>_STRINGS[property];
-    const innerHandler = (innerTarget: never, innerProperty: never): unknown => {
-        if (!currentObj[innerProperty]) return undefined;
-        if (typeof currentObj[innerProperty] === "object") {
-            currentObj = currentObj[innerProperty];
-            return new Proxy(_TEST_STRINGS_NOOP, { get: innerHandler });
-        }
 
-        // blacklist
-        if (currentObj.NON_SHINY) return currentObj[innerProperty];
-
-        // apply changes here
-        if (typeof currentObj[innerProperty] === "function")
-            return (...args: never[]): unknown =>
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                `test_${(<Record<string, any>>currentObj)[<string>innerProperty](...args)}`;
-        if (typeof currentObj[innerProperty] === "string") return `test_${currentObj[innerProperty]}`;
-        return currentObj[innerProperty];
+    // new sources should take precedence over old ones by default (start = true)
+    addSource = (source: TranslationData, start = true): this => {
+        if (start) this.sources.unshift(source);
+        else this.sources.push(source);
+        this.updateSources();
+        return this;
     };
-    return new Proxy(_TEST_STRINGS_NOOP, { get: innerHandler });
-};
-const _TEST_STRINGS: IStrings = <never>(new Proxy(_TEST_STRINGS_NOOP, {
-    get: _TEST_STRINGS_HANDLER
-}));
 
-const strings: Record<string, IStrings> = {
-    STRINGS: _STRINGS,
-    TEST: _TEST_STRINGS
-};
-const selectedName = "STRINGS";
-// const selectedName = "TEST";
-// const STRINGS = strings[selectedName];
-const oldStrings = strings[selectedName];
+    removeSource = (source: TranslationData): this => {
+        this.sources = this.sources.filter((x) => x.name === source.name);
+        this.updateSources();
+        return this;
+    };
 
-import newstrings from "./newstrings";
+    clearSources = (): this => {
+        this.sources = this.defaultSources;
+        this.updateSources();
+        return this;
+    };
 
-// we have both old and new systems on the same object for now
-const STRINGS = Object.assign({}, oldStrings, newstrings);
+    updateSources = (): this => {
+        this.flatSources = Object.assign({}, ...this.sources.map((x) => x.data));
+        return this;
+    };
 
-export default STRINGS;
+    getString = (str: string, ...args: unknown[]): string => {
+        const a = this.flatSources[str] && Strings.format(this.flatSources[str], ...args) || str;
+        // return uwuify(a);
+        return a;
+    };
+    get: typeof getString;
+}
 
-// export { default } from "./newstrings";
+const format = Strings.format;
+const getString = Strings.getString;
+
+export { format, getString, Strings, TranslationData, defaultStrings }; // exported so people can remove it i guess
+export default Strings;
