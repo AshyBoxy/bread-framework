@@ -23,7 +23,7 @@ jobs:
           tar -cf bread-framework.tar.gz ./*
         if: ${{ ! failure() }}
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bread-framework.tar.gz
           path: bread-framework.tar.gz
