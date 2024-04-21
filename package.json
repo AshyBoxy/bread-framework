@@ -2,7 +2,7 @@
   "name": "bread-framework",
   "version": "0.0.1",
   "description": "",
-  "main": "dist/bootstrap.js",
+  "main": "dist/index.js",
   "type": "module",
   "engines": {
     "node": ">=20.12.0"
