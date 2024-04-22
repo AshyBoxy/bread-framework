@@ -1,3 +1,4 @@
+// @ts-nocheck
 /*
 https://github.com/nodejs/loaders-test/blob/main/commonjs-extension-resolution-loader/loader.js
 

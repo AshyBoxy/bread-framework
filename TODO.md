@@ -1,0 +1,1 @@
+- The resolve library doesn't support exports in package.json

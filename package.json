@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./register": "./register-loader.js"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.12.0"
