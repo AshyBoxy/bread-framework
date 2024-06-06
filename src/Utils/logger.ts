@@ -33,6 +33,7 @@ class Logger implements ILogger {
         const promise = this.webhook?.send(`>>> ${msg}`).then(() => {
             delete this.#unlogged[id];
         }).catch((err) => {
+            delete this.#unlogged[id];
             delete this.webhook;
             this.error(err.toString ? err.toString() : err);
         });
