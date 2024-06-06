@@ -24,7 +24,7 @@
   "author": "AshyBoxy <ashyboxy2@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.13.0",
+    "discord.js": "^14.15.3",
     "leveldown": "^6.1.1",
     "levelup": "^5.1.1",
     "resolve": "^1.22.8"
