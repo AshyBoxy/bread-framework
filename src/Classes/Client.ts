@@ -99,7 +99,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         ];
         for (const file of moduleFiles) this.modules.push({
             path: path.dirname(file),
-            ...(await import(file, file.endsWith(".json") ? { assert: { type: "json" } } : undefined)).default
+            ...(await import(file, file.endsWith(".json") ? { with: { type: "json" } } : undefined)).default
         });
 
         for (let i = 0; i < this.modules.length; i++) {

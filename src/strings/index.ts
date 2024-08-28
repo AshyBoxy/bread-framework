@@ -4,7 +4,7 @@ const defaultStringsPath = "./english.json";
 // const defaultStringsPath = "./french.json";
 const defaultStrings: TranslationData = {
     name: "breadfw_defaultstrings",
-    data: (await import(defaultStringsPath, { assert: { type: "json" } })).default
+    data: (await import(defaultStringsPath, { with: { type: "json" } })).default
 };
 
 
