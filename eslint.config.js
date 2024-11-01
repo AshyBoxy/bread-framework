@@ -1,9 +1,7 @@
 import js from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
 import globals from "globals";
 import ts from "typescript-eslint";
-
 
 const tsConfigMain = ts.configs.recommended.map((config) => ({
     ...config, files: ["**/*.ts"]
@@ -30,7 +28,7 @@ export default [
             globals: {
                 ...globals.node
             },
-            parser: tsParser,
+            parser: ts.parser,
             ecmaVersion: 2022,
             sourceType: "module"
         },

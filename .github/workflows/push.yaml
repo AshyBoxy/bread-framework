@@ -1,0 +1,33 @@
+on: push
+jobs:
+  check_and_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.9'
+      - name: Install dependencies
+        run: npm ci --include dev
+      - name: Check
+        run: npm run check
+        if: ${{ ! failure() }}
+        continue-on-error: true
+      - name: Build
+        run: npm run build
+        if: ${{ ! failure() }}
+        continue-on-error: true
+      - name: Create artifact
+        id: create
+        run: |
+          rm -rf node_modules
+          tar -cf bread-framework.tar.gz ./*
+        if: ${{ ! failure()  }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bread-framework.tar.gz
+          path: bread-framework.tar.gz
+        if: ${{ ! failure()  }}
