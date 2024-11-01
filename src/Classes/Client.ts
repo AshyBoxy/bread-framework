@@ -40,6 +40,9 @@ class MapDB<valueType> implements IDatabase<valueType> {
     close = (): Promise<void> => new Promise((r) => r());
 }
 
+const validFileRegex = /\.[tj]s$/;
+const fileSplitRegex = /\.[tj]s/;
+
 // using true here basically makes typescript assume the bot is ready
 // meaning it won't enforce type checking
 // this probably shouldn't be left like this(?)
@@ -81,7 +84,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         const eventFiles: eventFile[] = [
             ...this.config.eventsPath ? readdirSync(this.config.eventsPath).map((x) => ({ path: x, dir: <string>this.config.eventsPath })) : [],
             ...readdirSync(BreadClient.BuiltInEventPath).map((x) => ({ path: x, dir: BreadClient.BuiltInEventPath }))
-        ].filter((x: eventFile) => x.path.endsWith(".js"));
+        ].filter((x: eventFile) => validFileRegex.test(x.path));
 
         for (let i = 0; i < eventFiles.length; i++) {
             const event: EventHandler<keyof ClientEvents> = (await import(path.join(eventFiles[i].dir, eventFiles[i].path))).default;
@@ -103,13 +106,13 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         });
 
         for (let i = 0; i < this.modules.length; i++) {
-            const cmdFiles = readdirSync(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath || "", this.modules[i].path)).filter((x: string) => x.endsWith(".js"));
+            const cmdFiles = readdirSync(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath || "", this.modules[i].path)).filter((x: string) => validFileRegex.test(x));
 
             const commands: string[] = [];
             for (let x = 0; x < cmdFiles.length; x++) {
                 const cmd: Command = (await import(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath || "", this.modules[i].path, cmdFiles[x]))).default;
                 if (!cmd?.run || !cmd?.name) {
-                    warnings.push(strings.get("bread_framework.classes.breadclient.commandwarning", cmdFiles[x].split(".js")[0], this.modules[i].name));
+                    warnings.push(strings.get("bread_framework.classes.breadclient.commandwarning", cmdFiles[x].split(fileSplitRegex)[0], this.modules[i].name));
                     continue;
                 }
                 cmd.module = this.modules[i];

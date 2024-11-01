@@ -1,10 +1,11 @@
-import { ChatInputCommandInteraction, PermissionResolvable, SlashCommandBuilder, TextBasedChannel } from "discord.js";
-import Client from "./Client";
+import { InteractionContextType } from "discord-api-types/v10";
+import { ChatInputCommandInteraction, PartialGroupDMChannel, PermissionResolvable, SlashCommandBuilder, TextBasedChannel } from "discord.js";
 import IGeneralCommandData from "../Interfaces/GeneralCommandData";
-import IModule from "../Interfaces/Module";
 import BreadMessage from "../Interfaces/Message";
+import IModule from "../Interfaces/Module";
+import Client from "./Client";
 
-export type run = (bot: Client, message: BreadMessage | (ChatInputCommandInteraction & { channel: TextBasedChannel; }), args: string[]) => number | void | Promise<number | void>;
+export type run = (bot: Client, message: BreadMessage | (ChatInputCommandInteraction & { channel: Exclude<TextBasedChannel, PartialGroupDMChannel>; }), args: string[]) => number | void | Promise<number | void>;
 
 class Command implements IGeneralCommandData {
 
@@ -25,7 +26,7 @@ class Command implements IGeneralCommandData {
     module: IModule = {
         name: "None",
         path: "none",
-        description: "Not part of a module???"
+        description: "Placeholder module"
     };
 
     constructor(execute: run, data: IGeneralCommandData) {
@@ -44,7 +45,9 @@ class Command implements IGeneralCommandData {
         this.slashCommand = new SlashCommandBuilder()
             .setName(this.name.toLowerCase())
             .setDescription(this.info)
-            .setDMPermission(!this.dmOnly);
+            .setContexts(this.dmOnly ? [InteractionContextType.BotDM] : this.guildOnly ? [InteractionContextType.Guild] : [InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel]);
+
+        if (this.guildOnly && this.dmOnly) throw new Error(`${this.name} is both a dm and guild only command?`);
     }
 }
 
