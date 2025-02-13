@@ -17,7 +17,7 @@ export { default as GuildCommand } from "./Classes/GuildCommand";
 export { default as EventHandler } from "./Classes/EventHandler";
 
 // Interfaces
-export { default as IConfig } from "./Interfaces/Config";
+export { default as IConfig, ClientConfig } from "./Interfaces/Config";
 export { default as IGuildConfig } from "./Interfaces/GuildConfig";
 export { default as IModule } from "./Interfaces/Module";
 export { default as BreadMessage, default as Message } from "./Interfaces/Message";

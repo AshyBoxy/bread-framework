@@ -15,3 +15,4 @@ interface ClientConfig {
 type IConfig = ClientConfig & ClientOptions;
 
 export default IConfig;
+export { ClientConfig };
