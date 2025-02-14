@@ -11,6 +11,7 @@ interface ClientConfig {
     };
     eventsPath?: string;
     commandsPath?: string;
+    development?: boolean;
 }
 type IConfig = ClientConfig & ClientOptions;
 
