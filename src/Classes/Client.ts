@@ -13,6 +13,9 @@ import Command from "./Command";
 import EventHandler from "./EventHandler";
 import { strings } from "..";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type
+export interface BreadUserDBs extends Record<string, IDatabase<any>> { }
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HooksType<Databases extends Record<string, IDatabase<any>>> = {
     messageCreate?: {
@@ -56,12 +59,12 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
     commands: Collection<string, Command> = new Collection();
     aliases: Collection<string, string> = new Collection();
 
-    dbs: DBRecord<Databases & RequiredDBs>;
+    dbs: DBRecord<Databases & BreadUserDBs & RequiredDBs>;
 
     logger: ILogger;
 
     constructor(
-        config: IConfig, dbs: DBRecord<Databases>, modules: IModule[] = [], public hooks?: HooksType<Databases>
+        config: IConfig, dbs: DBRecord<Databases & BreadUserDBs>, modules: IModule[] = [], public hooks?: HooksType<Databases>
     ) {
         super(config);
         this.config = config;
