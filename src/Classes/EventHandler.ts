@@ -1,4 +1,4 @@
-import { ClientEvents, MessageReaction, Partialize, PartialUser, User } from "discord.js";
+import { ClientEvents, MessageReaction, MessageReactionEventDetails, Partialize, PartialUser, User } from "discord.js";
 import BreadMessage from "../Interfaces/Message";
 import BreadClient from "./Client";
 
@@ -10,7 +10,7 @@ type PartialBreadMessageReaction = Partialize<BreadMessageReaction, "count">;
 
 interface IEvents extends ClientEvents {
     messageCreate: [message: BreadMessage];
-    messageReactionAdd: [reaction: BreadMessageReaction | PartialBreadMessageReaction, user: User | PartialUser];
+    messageReactionAdd: [reaction: BreadMessageReaction | PartialBreadMessageReaction, user: User | PartialUser, details: MessageReactionEventDetails];
 }
 type Events = keyof IEvents;
 
