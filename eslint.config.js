@@ -129,5 +129,16 @@ export default [
                 }
             ]
         }
+    },
+    {
+        rules: {
+            "no-unused-vars": "off",
+            "@typescript-eslint/no-unused-vars": ["error", {
+                vars: "all",
+                varsIgnorePattern: "^_",
+                args: "after-used",
+                caughtErrors: "none"
+            }]
+        }
     }
 ];
