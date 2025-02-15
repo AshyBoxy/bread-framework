@@ -5,24 +5,15 @@ import IConfig from "../Interfaces/Config";
 import IDatabase from "../Interfaces/Database";
 import IGuildConfig from "../Interfaces/GuildConfig";
 import ILogger from "../Interfaces/Logger";
-import BreadMessage from "../Interfaces/Message";
 import IModule from "../Interfaces/Module";
 import { logger } from "../Utils";
-import { HOOK_CODES } from "../constants";
 import Command from "./Command";
 import EventHandler from "./EventHandler";
 import { strings } from "..";
+import { HooksType, setHookLogger } from "../Utils/hooks";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type
 export interface BreadUserDBs extends Record<string, IDatabase<any>> { }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type HooksType<Databases extends Record<string, IDatabase<any>>> = {
-    messageCreate?: {
-        immediately?: ((bot: BreadClient<Databases>, msg: BreadMessage) => Promise<HOOK_CODES> | HOOK_CODES)[];
-        beforeCommand?: ((bot: BreadClient<Databases>, msg: BreadMessage, cmd: string, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
-    };
-};
 
 type DBRecord<K extends object> = {
     [P in keyof K]: K[P]
@@ -64,7 +55,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
     logger: ILogger;
 
     constructor(
-        config: IConfig, dbs: DBRecord<Databases & BreadUserDBs>, modules: IModule[] = [], public hooks?: HooksType<Databases>
+        config: IConfig, dbs: DBRecord<Databases & BreadUserDBs>, modules: IModule[] = [], public hooks: HooksType<Databases> = {}
     ) {
         super(config);
         this.config = config;
@@ -75,6 +66,8 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         };
 
         this.logger = new logger(<BreadClient>this);
+
+        setHookLogger(this.logger);
     }
 
     async setup(): Promise<void> {

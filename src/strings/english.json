@@ -13,5 +13,6 @@
     "bread_framework.classes.breadclient.events": "loaded events: {0}",
     "bread_framework.classes.breadclient.modules": "loaded modules: {0}",
     "bread_framework.classes.breadclient.commandwarning": "command {0} in module {1} has no run function or name",
-    "bread_framework.classes.breadclient.shutting_down": "Shutting Down: {0}"
+    "bread_framework.classes.breadclient.shutting_down": "Shutting Down: {0}",
+    "bread_framework.hooks.bad_return": "unknown hook return \"{0}\" for {1} hook {2}"
 }

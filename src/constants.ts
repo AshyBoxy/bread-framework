@@ -11,8 +11,4 @@ export enum RETURN_CODES {
     ERROR
 }
 
-export enum HOOK_CODES {
-    OK,
-    CONTINUE = OK,
-    STOP
-}
+export { HOOK_CODES } from "./Utils/hooks";

@@ -1,20 +1,11 @@
 import { EventHandler, IGuildConfig, strings } from "../..";
-import { HOOK_CODES } from "../constants";
 import * as utils from "../Utils";
+import { runHooks } from "../Utils/hooks";
 
 // should guildConfig be in a bread only hook?
 
 export default new EventHandler("messageCreate", (bot) => async (msg): Promise<void> => {
-    let hookReturn: HOOK_CODES;
-    for (const hook of bot.hooks?.messageCreate?.immediately || []) switch (hookReturn = await hook(bot, msg)) {
-        case HOOK_CODES.OK:
-        case HOOK_CODES.CONTINUE:
-            break;
-        case HOOK_CODES.STOP:
-            return;
-        default:
-            bot.logger.debug(`unknown hook return "${hookReturn}" for messageCreate.immediately hook ${hook.name || "with unknown name"}`);
-    }
+    if (await runHooks("messageCreate.immediately", bot.hooks.messageCreate?.immediately, bot, msg)) return;
     if (msg.author.bot) return;
 
     let guildConfig: IGuildConfig | undefined;
@@ -44,23 +35,20 @@ export default new EventHandler("messageCreate", (bot) => async (msg): Promise<v
         prefix = "";
     }
 
-    for (const hook of bot.hooks?.messageCreate?.beforeCommand || []) switch (hookReturn = await hook(bot, msg, cmd, args, prefix)) {
-        case HOOK_CODES.OK:
-        case HOOK_CODES.CONTINUE:
-            break;
-        case HOOK_CODES.STOP:
-            return;
-        default:
-            bot.logger.debug(`unknown hook return "${hookReturn}" for messageCreate.beforeCommand hook ${hook.name || "with unknown name"}`);
+    if (await runHooks("messageCreate.beforeCommand", bot.hooks.messageCreate?.beforeCommand, bot, msg, cmd, args, prefix)) return;
+
+    if (cmd.startsWith(prefix)) {
+        let command;
+        cmd = cmd.slice(prefix.length);
+
+        if (bot.commands.get(cmd)) command = bot.commands.get(cmd);
+        else if (bot.commands.get(<string>bot.aliases.get(cmd))) command = bot.commands.get(<string>bot.aliases.get(cmd));
+
+        if (command) {
+            utils.discord.runCommand(bot, msg, args, command);
+            return
+        }
     }
 
-    if (!cmd.startsWith(prefix)) return;
-
-    let command;
-    cmd = cmd.slice(prefix.length);
-
-    if (bot.commands.get(cmd)) command = bot.commands.get(cmd);
-    else if (bot.commands.get(<string>bot.aliases.get(cmd))) command = bot.commands.get(<string>bot.aliases.get(cmd));
-
-    if (command) utils.discord.runCommand(bot, msg, args, command);
+    runHooks("messageCreate.notCommand", bot.hooks.messageCreate?.notCommand, bot, msg, cmd, args);
 });

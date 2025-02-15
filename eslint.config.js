@@ -108,7 +108,9 @@ export default [
         files: ["**/*.ts"],
 
         rules: {
-            "@typescript-eslint/explicit-function-return-type": "error",
+            "@typescript-eslint/explicit-function-return-type": ["error", {
+                allowExpressions: true
+            }],
             "@stylistic/comma-spacing": "error",
 
             "@stylistic/quotes": [

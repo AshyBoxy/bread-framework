@@ -19,6 +19,7 @@ class Strings {
         tar?.split(".").slice(1).reduce((acc: Record<string, unknown> | undefined, cur: string) => acc && acc[cur], args[num]) || args[num] || m);
     static instance = new Strings();
     static addSource = Strings.instance.addSource;
+    static addDefaultSource = Strings.instance.addDefaultSource;
     static removeSource = Strings.instance.removeSource;
     static clearSources = Strings.instance.clearSources;
     static updateSources = Strings.instance.updateSources;
@@ -32,7 +33,7 @@ class Strings {
 
     constructor(public sources: TranslationData[] = [defaultStrings]) {
         this.get = this.getString;
-        this.defaultSources = sources;
+        this.defaultSources = [...sources];
         this.updateSources();
     }
 
@@ -45,6 +46,13 @@ class Strings {
         return this;
     };
 
+    addDefaultSource = (source: TranslationData, start = true): this => {
+        if (start) this.defaultSources.unshift(source);
+        else this.defaultSources.push(source);
+        this.updateSources();
+        return this;
+    };
+
     removeSource = (source: TranslationData): this => {
         this.sources = this.sources.filter((x) => x.name === source.name);
         this.updateSources();
@@ -52,13 +60,13 @@ class Strings {
     };
 
     clearSources = (): this => {
-        this.sources = this.defaultSources;
+        this.sources = [...this.defaultSources];
         this.updateSources();
         return this;
     };
 
     updateSources = (): this => {
-        this.flatSources = Object.assign({}, ...this.sources.map((x) => x.data));
+        this.flatSources = Object.assign({}, ...this.sources.toReversed().map((x) => x.data));
         return this;
     };
 
@@ -73,5 +81,5 @@ class Strings {
 const format = Strings.format;
 const getString = Strings.getString;
 
-export { format, getString, Strings, TranslationData, defaultStrings }; // exported so people can remove it i guess
+export { format, getString, Strings, TranslationData, defaultStrings }; // exported so people can remove it i guess - what?
 export default Strings;
