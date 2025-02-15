@@ -4,3 +4,4 @@ export { default as randomNum, randomNumber, randomFloat, randomInt } from "./ra
 
 export * as discord from "./discord";
 export * as mentions from "./mentions";
+export * as hooks from "./hooks";

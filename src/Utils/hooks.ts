@@ -1,5 +1,5 @@
 import { strings } from "..";
-import { BreadClient } from "../Classes/Client";
+import BreadClient from "../Classes/Client";
 import IDatabase from "../Interfaces/Database";
 import ILogger from "../Interfaces/Logger";
 import BreadMessage from "../Interfaces/Message";

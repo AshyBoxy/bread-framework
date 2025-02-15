@@ -65,7 +65,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
             guildConfigs: dbs.guildConfigs || new MapDB()
         };
 
-        this.logger = new logger(<BreadClient>this);
+        this.logger = new logger(this.config.logging || {});
 
         setHookLogger(this.logger);
     }

@@ -1,20 +1,48 @@
 /* eslint-disable no-console */
-import { WebhookClient } from "discord.js";
-import BreadClient from "../Classes/Client";
+import { WebhookClient, WebhookClientData, WebhookClientOptions } from "discord.js";
+import { LoggingConfig, WebhookUrlConfig } from "../Interfaces/Config";
 import ILogger from "../Interfaces/Logger";
 
+const webhookSettings: WebhookClientOptions = {
+    allowedMentions: { parse: [] }
+};
+
 class Logger implements ILogger {
-    private webhook?: WebhookClient;
+    private webhookCounter = 0;
+    private webhooks: WebhookClient[] = [];
     #unlogged: Record<number, Promise<unknown>>;
 
-    constructor(bot?: BreadClient) {
-        if (bot?.config.logging?.webhook) this.webhook = new WebhookClient(
-            { id: bot.config.logging.webhook.id, token: bot.config.logging.webhook.token },
-            { allowedMentions: { parse: [] } });
+    constructor(public config: LoggingConfig) {
+        if (config.webhook)
+            if (typeof (<WebhookUrlConfig>config.webhook).url !== "object")
+                this.addWebhook(new WebhookClient(<WebhookClientData>config.webhook, webhookSettings));
+            else for (const url of (<WebhookUrlConfig>config.webhook).url)
+                this.addWebhook(new WebhookClient({ url }, webhookSettings));
 
         this.#unlogged = [];
 
         this.debug("hello from logger.ts");
+    }
+
+    private addWebhook(webhook: WebhookClient): void {
+        this.webhooks[this.webhookCounter] = webhook;
+        this.webhookCounter++;
+    }
+
+    sendWebhook(msg: string): void {
+        for (const webhookId in this.webhooks) {
+            // this feels like it would be buggy
+            const id = Object.keys(this.#unlogged).length + 1;
+            const promise = this.webhooks[webhookId].send(msg).then(() => {
+                delete this.#unlogged[id];
+            }).catch((err) => {
+                delete this.#unlogged[id];
+                delete this.webhooks[webhookId];
+                this.error(err.toString ? err.toString() : err);
+            });
+
+            if (promise) this.#unlogged[id] = promise;
+        }
     }
 
     async flush(): Promise<void> {
@@ -28,17 +56,7 @@ class Logger implements ILogger {
         if (extras && Object.keys(extras).length > 0) msg += ` (${JSON.stringify(extras)})`;
         console.log(msg);
 
-        // this feels like it would be buggy
-        const id = Object.keys(this.#unlogged).length + 1;
-        const promise = this.webhook?.send(`>>> ${msg}`).then(() => {
-            delete this.#unlogged[id];
-        }).catch((err) => {
-            delete this.#unlogged[id];
-            delete this.webhook;
-            this.error(err.toString ? err.toString() : err);
-        });
-
-        if (promise) this.#unlogged[id] = promise;
+        this.sendWebhook(`>>> ${msg}`)
     }
 
     error(message: string | string[], extras?: Record<string, unknown>): void {

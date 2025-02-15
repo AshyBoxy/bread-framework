@@ -81,5 +81,5 @@ class Strings {
 const format = Strings.format;
 const getString = Strings.getString;
 
-export { format, getString, Strings, TranslationData, defaultStrings }; // exported so people can remove it i guess - what?
+export { format, getString, Strings, TranslationData };
 export default Strings;
