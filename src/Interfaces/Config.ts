@@ -23,7 +23,11 @@ interface ClientConfig {
     commandsPath?: string;
     development?: boolean;
 }
-type IConfig = ClientConfig & ClientOptions;
+
+// eslint-disable-next-line
+interface UserConfig {}
+
+type IConfig = ClientConfig & ClientOptions & UserConfig;
 
 export default IConfig;
-export { ClientConfig, LoggingConfig, WebhookIdTokenConfig, WebhookUrlConfig, WebhookConfig };
+export { ClientConfig, LoggingConfig, WebhookIdTokenConfig, WebhookUrlConfig, WebhookConfig, UserConfig };
