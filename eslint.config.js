@@ -99,7 +99,7 @@ export default [
             ],
 
             "comma-spacing": "off",
-            quotes: "off"
+            quotes: "off",
         }
     },
     ...tsConfigMain,
@@ -140,7 +140,8 @@ export default [
                 varsIgnorePattern: "^_",
                 args: "after-used",
                 caughtErrors: "none"
-            }]
+            }],
+            "@typescript-eslint/prefer-for-of": "warn"
         }
     }
 ];
