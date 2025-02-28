@@ -5,7 +5,7 @@ import Client from "./Client";
 import Command, { run } from "./Command";
 
 class GuildCommand extends Command {
-    constructor(execute: (bot: Client, message: IGuildMessage, args: string[]) => number | void | Promise<number | void>, data: IGuildCommandData) {
+    constructor(execute: (this: GuildCommand, bot: Client, message: IGuildMessage, args: string[]) => number | void | Promise<number | void>, data: IGuildCommandData) {
         const commandData: IGeneralCommandData = data;
         commandData.guildOnly = true;
         super(<run>execute, commandData);

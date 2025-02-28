@@ -82,8 +82,8 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
             ...readdirSync(BreadClient.BuiltInEventPath).map((x) => ({ path: x, dir: BreadClient.BuiltInEventPath }))
         ].filter((x: eventFile) => validFileRegex.test(x.path));
 
-        for (let i = 0; i < eventFiles.length; i++) {
-            const event: EventHandler<keyof ClientEvents> = (await import(path.join(eventFiles[i].dir, eventFiles[i].path))).default;
+        for (const eventFile of eventFiles) {
+            const event: EventHandler<keyof ClientEvents> = (await import(path.join(eventFile.dir, eventFile.path))).default;
             this.on(event.name, event.execute(<BreadClient>this));
             events.push(event.name);
         }
@@ -96,34 +96,68 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
             ...this.config.commandsPath ? (<(path: string, opts: object) => string[]>readdirSync)(this.config.commandsPath, { recursive: true }).filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(<string>this.config.commandsPath, x)) : [],
             ...(<(path: string, opts: object) => string[]>readdirSync)(BreadClient.BuiltInCommandsPath, { recursive: true }).filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(BreadClient.BuiltInCommandsPath, x))
         ];
-        for (const file of moduleFiles) this.modules.push({
-            path: path.dirname(file),
-            ...(await import(file, file.endsWith(".json") ? { with: { type: "json" } } : undefined)).default
-        });
+        for (const file of moduleFiles) {
+            const module = {
+                path: path.dirname(file),
+                ...(await import(file, file.endsWith(".json") ? { with: { type: "json" } } : undefined)).default
+            };
 
-        for (let i = 0; i < this.modules.length; i++) {
-            const cmdFiles = readdirSync(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath || "", this.modules[i].path)).filter((x: string) => validFileRegex.test(x));
+            if (module.ns) {
+                const id = module.id || path.dirname(file);
+                if (!module.name)
+                    module.name = `${module.ns}.modules.${id}`;
+                if (!module.description)
+                    module.description = `${module.ns}.modules.${id}.description`;
+            }
+
+            this.modules.push(module);
+        }
+        for (const module of this.modules) {
+            const cmdFiles = readdirSync(path.join(module.path.startsWith("/") ? "" : this.config.commandsPath || "", module.path)).filter((x: string) => validFileRegex.test(x));
 
             const commands: string[] = [];
-            for (let x = 0; x < cmdFiles.length; x++) {
-                const cmd: Command = (await import(path.join(this.modules[i].path.startsWith("/") ? "" : this.config.commandsPath || "", this.modules[i].path, cmdFiles[x]))).default;
+            for (const cmdFile of cmdFiles) {
+                const cmd: Command = (await import(path.join(module.path.startsWith("/") ? "" : this.config.commandsPath || "", module.path, cmdFile))).default;
+                cmd.module = module;
+
+                cmd.setNs(module.ns, path.basename(cmdFile).split(".").slice(0, -1).join(".") || path.basename(cmdFile));
+
                 if (!cmd?.run || !cmd?.name) {
-                    warnings.push(strings.get("bread_framework.classes.breadclient.commandwarning", cmdFiles[x].split(fileSplitRegex)[0], this.modules[i].name));
+                    warnings.push(strings.get("bread_framework.classes.breadclient.commandwarning", cmdFile.split(fileSplitRegex)[0], strings.get(module.name)));
                     continue;
                 }
-                cmd.module = this.modules[i];
-                this.commands.set(cmd.name.toLowerCase(), cmd);
-                if (cmd.aliases) for (let y = 0; y < cmd.aliases.length; y++)
-                    this.aliases.set(cmd.aliases[y], cmd.name.toLowerCase());
-                commands.push(cmd.name);
+
+                this.commands.set(cmd.name, cmd);
+                // if (cmd.aliases) for (const alias of cmd.aliases)
+                //     this.aliases.set(alias, cmd.name.toLowerCase());
+                commands.push(cmd.getName());
             }
-            modulesLog.push(`${this.modules[i].name} (${commands.join(", ")})`);
+            modulesLog.push(`${strings.get(module.name)} (${commands.join(", ")})`);
         }
         infos.push(strings.get("bread_framework.classes.breadclient.modules", modulesLog.join("; ")));
 
 
         if (infos.length > 0) this.logger.info(infos.join("\n"));
         if (warnings.length > 0) this.logger.warn(warnings.join("\n"));
+    }
+
+    commandByName(name: string): Command | null {
+        const n = name.toLowerCase();
+        for (const cmd of this.commands.values()) {
+            if (n === cmd.getName().toLowerCase()) return cmd;
+            if (cmd.aliases.includes(n)) return cmd;
+        }
+        return this.commandById(name);
+    }
+
+    commandById(id: string): Command | null {
+        const cmd = this.commands.get(id);
+        if (cmd) return cmd;
+        for (const c of this.commands.values()) {
+            if (`${c.ns}.${c.id}` === id) return c;
+            if (c.id === id) return c;
+        }
+        return null;
     }
 
     async shutdown(reason: string): Promise<void> {

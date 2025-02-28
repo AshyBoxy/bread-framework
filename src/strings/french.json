@@ -13,5 +13,8 @@
     "bread_framework.classes.breadclient.events": "Événements chargés : {0}",
     "bread_framework.classes.breadclient.modules": "Modules chargés : {0}",
     "bread_framework.classes.breadclient.commandwarning": "La commande '{0}' dans le module '{1}' n'a ni fonction d'exécution ni de nom.",
-    "bread_framework.classes.breadclient.shutting_down": "Arrêt en cours : {0}"
+    "bread_framework.classes.breadclient.shutting_down": "Arrêt en cours : {0}",
+    "bread_framework.commands.help.name": "Aide",
+    "bread_framework.commands.help.info": "Montre l'aide",
+    "bread_framework.commands.help.usage": "aide [module|commande]"
 }

@@ -4,4 +4,5 @@ import BreadMessage from "./Message";
 export default interface IGuildMessage extends BreadMessage {
     guild: Guild;
     channel: TextChannel | NewsChannel;
+    guildId: string;
 }

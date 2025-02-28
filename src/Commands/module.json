@@ -1,4 +1,6 @@
 {
     "name": "BuiltIn",
-    "description": "Built In commands"
+    "description": "Built In commands",
+    "ns": "bread_framework",
+    "id": "builtin"
 }

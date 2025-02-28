@@ -38,15 +38,15 @@ export default new EventHandler("messageCreate", (bot) => async (msg): Promise<v
     if (await runHooks("messageCreate.beforeCommand", bot.hooks.messageCreate?.beforeCommand, bot, msg, cmd, args, prefix)) return;
 
     if (cmd.startsWith(prefix)) {
-        let command;
         cmd = cmd.slice(prefix.length);
 
-        if (bot.commands.get(cmd)) command = bot.commands.get(cmd);
-        else if (bot.commands.get(<string>bot.aliases.get(cmd))) command = bot.commands.get(<string>bot.aliases.get(cmd));
+        // if (bot.commands.get(cmd)) command = bot.commands.get(cmd);
+        // else if (bot.commands.get(<string>bot.aliases.get(cmd))) command = bot.commands.get(<string>bot.aliases.get(cmd));
+        const command = bot.commandByName(cmd);
 
         if (command) {
             utils.discord.runCommand(bot, msg, args, command);
-            return
+            return;
         }
     }
 

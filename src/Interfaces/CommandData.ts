@@ -3,7 +3,9 @@ import IInteractionArgument from "./InteractionArgument";
 import IModule from "./Module";
 
 export default interface ICommandData {
-    name: string;
+    ns?: string;
+    id?: string;
+    name?: string;
     info?: string;
     usage?: string;
     aliases?: string[];

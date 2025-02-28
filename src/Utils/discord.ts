@@ -14,6 +14,14 @@ async function runCommand(bot: Client, msg: Message | ChatInputCommandInteractio
         return msg.channel.send(Strings.get("bread_framework.utils.discord.disabled"));
     if (command.guildOnly && !msg.guild)
         return msg.channel.send(Strings.get("bread_framework.utils.discord.guild_only"));
+    if (msg.inGuild()) {
+        const m = <Message>msg;
+        const guildConfig = await bot.dbs.guildConfigs.get(m.guildId) || {};
+        guildConfig.userDisabledCommands ??= {};
+        const cmds = guildConfig.userDisabledCommands[m.author.id] || [];
+        if (cmds.includes(command.getFullId()))
+            return msg.reply(Strings.get("bread_framework.utils.discord.user_disabled"));
+    }
     if (command.dmOnly && msg.channel.type !== ChannelType.DM)
         return msg.channel.send(Strings.get("bread_framework.utils.discord.dm_only"));
     if (command.permission && msg.channel.type !== ChannelType.DM)
@@ -23,13 +31,13 @@ async function runCommand(bot: Client, msg: Message | ChatInputCommandInteractio
             return msg.channel.send(Strings.get("bread_framework.utils.discord.bot_permissions"));
 
     const cmdRun = await (<Promise<number | void>>command.run(bot, <Message>msg, args))?.catch?.((err) => {
-        bot.logger.error(Strings.get("bread_framework.utils.discord.error_log", command.name, err?.toString?.() || Strings.get("bread_framework.utils.discord.error_log.empty")));
+        bot.logger.error(Strings.get("bread_framework.utils.discord.error_log", command.getName(), err?.toString?.() || Strings.get("bread_framework.utils.discord.error_log.empty")));
         return RETURN_CODES.ERROR;
     });
 
     switch (cmdRun) {
         case RETURN_CODES.BAD_USAGE:
-            return msg.channel.send(Strings.get("bread_framework.utils.discord.bad_usage", bot.config.prefix, command.usage));
+            return msg.channel.send(Strings.get("bread_framework.utils.discord.bad_usage", bot.config.prefix, command.getUsage()));
         case RETURN_CODES.ERROR:
             return msg.channel.send(Strings.get("bread_framework.utils.discord.error"));
         default:

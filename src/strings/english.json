@@ -5,6 +5,7 @@
     "bread_framework.utils.discord.error_log.empty": "empty error",
     "bread_framework.utils.discord.disabled": "This command is currently disabled!",
     "bread_framework.utils.discord.guild_only": "This command can only be used in a server!",
+    "bread_framework.utils.discord.user_disabled": "This command has been disabled for you!",
     "bread_framework.utils.discord.dm_only": "This command can only be used in DMs!",
     "bread_framework.utils.discord.bad_permissions": "You don't have the required permissions to use this command!",
     "bread_framework.utils.discord.bot_permissions": "I don't have the required permissions to use this command!",
@@ -14,5 +15,17 @@
     "bread_framework.classes.breadclient.modules": "loaded modules: {0}",
     "bread_framework.classes.breadclient.commandwarning": "command {0} in module {1} has no run function or name",
     "bread_framework.classes.breadclient.shutting_down": "Shutting Down: {0}",
-    "bread_framework.hooks.bad_return": "unknown hook return \"{0}\" for {1} hook {2}"
+    "bread_framework.hooks.bad_return": "unknown hook return \"{0}\" for {1} hook {2}",
+    "bread_framework.commands.builtin.help.name": "Help",
+    "bread_framework.commands.builtin.help.info": "Shows help",
+    "bread_framework.commands.builtin.help.usage": "help [module|command]",
+    "bread_framework.commands.builtin.disablecmd.name": "DisableCMD",
+    "bread_framework.commands.builtin.disablecmd.info": "Disables a command for a specific user",
+    "bread_framework.commands.builtin.disablecmd.usage": "disablecmd -s <@user> | [-r] <@user> <command>",
+    "bread_framework.commands.builtin.disablecmd.nonexistent_command": "That command does not exist",
+    "bread_framework.commands.builtin.disablecmd.disabled": "Disabled {1} for {0}",
+    "bread_framework.commands.builtin.disablecmd.enabled": "Enabled {1} for {0}",
+    "bread_framework.commands.builtin.disablecmd.not_disabled": "{1} is not disabled for {0}",
+    "bread_framework.commands.builtin.disablecmd.show": "{0} has the following commands disabled: {1}",
+    "bread_framework.commands.builtin.disablecmd.show.none": "{0} has no commands disabled"
 }
