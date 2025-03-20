@@ -10,5 +10,6 @@ export { default as IGuildConfig } from "./Interfaces/GuildConfig";
 export { default as IModule } from "./Interfaces/Module";
 export { default as BreadMessage, default as Message } from "./Interfaces/Message";
 export { default as Database } from "./Interfaces/Database";
+export * from "./Interfaces/Context";
 
 export * from "./";

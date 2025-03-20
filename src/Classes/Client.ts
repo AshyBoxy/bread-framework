@@ -1,16 +1,17 @@
-import { APIUser, Client, ClientEvents, Collection, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
+import { APIUser, Client, ClientEvents, Collection, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
 import { readdirSync } from "fs";
 import * as path from "path";
+import { strings } from "..";
 import IConfig from "../Interfaces/Config";
 import IDatabase from "../Interfaces/Database";
 import IGuildConfig from "../Interfaces/GuildConfig";
 import ILogger from "../Interfaces/Logger";
 import IModule from "../Interfaces/Module";
 import { logger } from "../Utils";
+import { HooksType, setHookLogger } from "../Utils/hooks";
 import Command from "./Command";
 import EventHandler from "./EventHandler";
-import { strings } from "..";
-import { HooksType, setHookLogger } from "../Utils/hooks";
+import MapDB from "./MapDB";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type
 export interface BreadUserDBs extends Record<string, IDatabase<any>> { }
@@ -21,18 +22,6 @@ type DBRecord<K extends object> = {
 type RequiredDBs = {
     guildConfigs: IDatabase<IGuildConfig>;
 };
-
-class MapDB<valueType> implements IDatabase<valueType> {
-    #map = new Map<string, valueType>();
-    get(key: string): valueType | undefined {
-        return this.#map.get(key);
-    }
-    put(key: string, value: valueType): void {
-        this.#map.set(key, value);
-    }
-    set = this.put;
-    close = (): Promise<void> => new Promise((r) => r());
-}
 
 const validFileRegex = /\.[tj]s$/;
 const fileSplitRegex = /\.[tj]s/;
@@ -68,6 +57,8 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         this.logger = new logger(this.config.logging || {});
 
         setHookLogger(this.logger);
+
+        if (config.token) this.rest.setToken(config.token);
     }
 
     async setup(): Promise<void> {
@@ -171,15 +162,30 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         process.exit();
     }
 
-    // eslint-disable-next-line require-await
+    private cachedClientUser: APIUser | null = null;
+    async getClientUser(cache = true): Promise<APIUser> {
+        if (cache && this.cachedClientUser) return this.cachedClientUser;
+        const client = (<APIUser | null>await this.rest.get(Routes.user()));
+        if (!client) throw new Error("Unable to get client user");
+        this.cachedClientUser = client;
+        return client;
+    }
+
     async publishCommands(guildIds: string[] = []): Promise<void> {
         this.logger.info("Publishing slash commands");
         if (!this.config.token) throw new Error("No token provided");
-        const rest = new REST().setToken(this.config.token);
+        const rest = this.rest;
 
-        const clientId: string | undefined = (<APIUser | null>await rest.get(Routes.user()))?.id;
-        if (!clientId) throw new Error("Unable to get clientId");
-        // this.logger.info(`My client id is ${clientId}`);
+        const client = await this.getClientUser();
+
+        const cmds: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
+        this.commands.forEach((x) => {
+            // if (x.slashCommand.name === "ping")
+            //     cmds.push(x.slashCommand.toJSON());
+            if (x.messageOnly) return;
+            cmds.push(x.createSlashCommand(this.logger).toJSON());
+        });
+        this.logger.info(`Publishing commands: ${cmds.map((x) => x.name).join(", ")}`);
 
         if (guildIds.length > 0) {
             let guilds: unknown[] | string = guildIds.map(async (x) => ((<Record<string, string>>(await rest.get(Routes.guild(x)))).name));
@@ -187,15 +193,33 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
             guilds = guilds.join(", ");
             this.logger.debug(`Publishing commands for guilds: ${guilds}`);
 
-            const cmds: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
-            this.commands.forEach((x) => {
-                if (x.slashCommand.name === "ping")
-                    cmds.push(x.slashCommand.toJSON());
-            });
-            this.logger.info(`Publishing commands: ${cmds.map((x) => x.name).join(", ")}`);
-            for (const g of guildIds) await rest.put(Routes.applicationGuildCommands(clientId, g), { body: cmds });
-        } else
+
+            for (const g of guildIds) await rest.put(Routes.applicationGuildCommands(client.id, g), { body: cmds });
+        } else {
             this.logger.debug("Publishing commands globally");
+            await rest.put(Routes.applicationCommands(client.id), { body: cmds });
+        }
+    }
+
+    async clearCommands(guildIds: string[] = []): Promise<void> {
+        this.logger.info("Clearing slash commands");
+        // mm duplicated code
+        if (!this.config.token) throw new Error("No token provided");
+        const rest = this.rest;
+
+        const client = await this.getClientUser();
+
+        if (guildIds.length > 0) {
+            let guilds: unknown[] | string = guildIds.map(async (x) => ((<Record<string, string>>(await rest.get(Routes.guild(x)))).name));
+            for (let i = 0; i < guilds.length; i++) guilds[i] = await guilds[i];
+            guilds = guilds.join(", ");
+            this.logger.debug(`Clearing commands for guilds: ${guilds}`);
+
+            for (const g of guildIds) await rest.put(Routes.applicationGuildCommands(client.id, g), { body: [] });
+        } else {
+            this.logger.debug("Clearing commands globally");
+            await rest.put(Routes.applicationCommands(client.id), { body: [] });
+        }
     }
 }
 

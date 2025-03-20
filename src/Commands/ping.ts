@@ -1,7 +1,7 @@
 import Command from "../Classes/Command";
 
-export default new Command((bot, msg) => {
-    msg.channel.send(`Pong! ${Math.floor(bot.ws.ping)}ms`);
+export default new Command((bot, ctx) => {
+    ctx.send(`Pong! ${Math.floor(bot.ws.ping)}ms`);
     return 0;
 }, {
     name: "Ping",
@@ -21,5 +21,5 @@ export default new Command((bot, msg) => {
     interactionOnly: false,
     messageOnly: false,
 
-    args: {}
+    args: []
 });

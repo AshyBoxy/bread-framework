@@ -1,5 +1,5 @@
 import { PermissionResolvable } from "discord.js";
-import IInteractionArgument from "./InteractionArgument";
+import { Argument, ArgumentsBuilder } from "../Classes/Arguments";
 import IModule from "./Module";
 
 export default interface ICommandData {
@@ -16,11 +16,10 @@ export default interface ICommandData {
 
     interactionOnly?: boolean;
     messageOnly?: boolean;
+    userCompatible?: boolean;
+    userOnly?: boolean;
 
-    args?: {
-        required?: IInteractionArgument[]; // yooo this is a cool type
-        optional?: IInteractionArgument[];
-    };
+    args?: Argument[] | ArgumentsBuilder;
 
     permission?: PermissionResolvable;
     botPermission?: PermissionResolvable;
