@@ -1,8 +1,7 @@
 {
     "include": [
         "src/**/*",
-        "src/**/*.json",
-        "../Interfaces/UserData.ts"
+        "src/**/*.json"
     ],
     "compilerOptions": {
         "outDir": "dist",
