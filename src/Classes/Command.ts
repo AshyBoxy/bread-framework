@@ -83,9 +83,19 @@ class Command implements IGeneralCommandData {
     }
 
     getFullId(): string {
-        if (this.ns && this.id) return `${this.ns}.${this.id}`;
-        if (this.id) return this.id;
-        return this.name;
+        if (!this.id)
+            return this.name;
+
+        const ns = this.ns ?? this.module.ns;
+
+        let id = "";
+        if (ns)
+            id = `${ns}.`;
+        if (this.module.id)
+            id += `${this.module.id}.`;
+        id += this.id;
+
+        return id;
     }
 
     private updateNs(): void {
