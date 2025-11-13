@@ -54,7 +54,7 @@ class Strings {
     };
 
     removeSource = (source: TranslationData): this => {
-        this.sources = this.sources.filter((x) => x.name === source.name);
+        this.sources = this.sources.filter((x) => x.name !== source.name);
         this.updateSources();
         return this;
     };
