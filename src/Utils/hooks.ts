@@ -1,4 +1,4 @@
-import { strings } from "..";
+import { Command, strings } from "..";
 import BreadClient from "../Classes/Client";
 import IDatabase from "../Interfaces/Database";
 import ILogger from "../Interfaces/Logger";
@@ -10,6 +10,7 @@ export type HooksType<Databases extends Record<string, IDatabase<any>>> = {
         immediately?: ((bot: BreadClient<Databases>, msg: BreadMessage) => Promise<HOOK_CODES> | HOOK_CODES)[];
         beforeCommand?: ((bot: BreadClient<Databases>, msg: BreadMessage, cmd: string, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
         notCommand?: ((bot: BreadClient<Databases>, msg: BreadMessage, cmd: string, args: string[]) => Promise<HOOK_CODES> | HOOK_CODES)[];
+        command?: ((bot: BreadClient<Databases>, msg: BreadMessage, command: Command, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
     };
 };
 
