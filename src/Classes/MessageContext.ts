@@ -1,17 +1,23 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { ChannelType, Message, MessageCreateOptions, MessagePayload, MessageReplyOptions } from "discord.js";
-import { Context, GuildContext, InteractionBasedContext, MessageBasedContext } from "../Interfaces/Context";
+import { ChannelType, MessageCreateOptions, MessagePayload, MessageReplyOptions } from "discord.js";
+import { ChatInteractionBasedContext, ComponentInteractionBasedContext, Context, GuildContext, InteractionBasedContext, MessageBasedContext } from "../Interfaces/Context";
+import BreadMessage from "../Interfaces/Message";
+import BreadClient from "./Client";
 
 export default class MessageContext implements Context, GuildContext, MessageBasedContext {
-    constructor(public msg: Message) { }
+    constructor(public msg: BreadMessage) { }
 
-    send(options: string | MessagePayload | MessageCreateOptions): Promise<Message> {
+    send(options: string | MessagePayload | MessageCreateOptions): Promise<BreadMessage> {
         if (!this.msg.channel.isSendable()) throw new Error(`Tried to send in unsendable channel ${this.msg.channel.name} (${this.msg.channel.type})`);
         return <never>this.msg.channel.send(options);
     };
 
     reply(options: string | MessagePayload | MessageReplyOptions) {
         return this.msg.reply(options);
+    }
+
+    get client() {
+        return <BreadClient>this.msg.client;
     }
 
     get user() {
@@ -47,6 +53,12 @@ export default class MessageContext implements Context, GuildContext, MessageBas
         return true;
     }
     isInteractionBased(): this is InteractionBasedContext {
+        return false;
+    }
+    isChatInteractionBased(): this is ChatInteractionBasedContext {
+        return false;
+    }
+    isComponentInteractionBased(): this is ComponentInteractionBasedContext {
         return false;
     }
 }

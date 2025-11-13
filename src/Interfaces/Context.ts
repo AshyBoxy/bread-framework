@@ -1,8 +1,19 @@
-import { Channel, ChatInputCommandInteraction, Guild, GuildMember, Message, PartialTextBasedChannelFields, Snowflake, TextBasedChannel, User } from "discord.js";
+import { Channel, ChatInputCommandInteraction, CollectedInteraction, Guild, GuildMember, InteractionReplyOptions, InteractionResponse, Message, MessageComponentInteraction, MessagePayload, MessageReplyOptions, ModalSubmitInteraction, PartialTextBasedChannelFields, RepliableInteraction, Snowflake, TextBasedChannel, User } from "discord.js";
+import BreadClient from "../Classes/Client";
+import BreadMessage from "./Message";
+
+type MessageReplySignature = Message["reply"];
+type InteractionReplySignature = MessageComponentInteraction["reply"];
+type BaseReplySignature =
+    ((options: string | MessagePayload | MessageReplyOptions) => Promise<Message | InteractionResponse>) |
+    ((options: string | MessagePayload | InteractionReplyOptions) => Promise<Message | InteractionResponse>);
+
 
 interface Context {
     send: PartialTextBasedChannelFields["send"];
-    reply: Message["reply"];
+    reply: BaseReplySignature;
+
+    client: BreadClient;
 
     user: User;
     channel: Channel | null;
@@ -15,6 +26,8 @@ interface Context {
 
     isMessageBased(): this is MessageBasedContext;
     isInteractionBased(): this is InteractionBasedContext;
+    isChatInteractionBased(): this is ChatInteractionBasedContext;
+    isComponentInteractionBased(): this is ComponentInteractionBasedContext;
 }
 
 interface GuildContext extends Context {
@@ -24,14 +37,27 @@ interface GuildContext extends Context {
 }
 
 interface MessageBasedContext extends Context {
+    reply: MessageReplySignature;
     content: string;
-    message: Message;
+    message: BreadMessage;
     channel: TextBasedChannel;
 }
 
 interface InteractionBasedContext extends Context {
+    reply: InteractionReplySignature;
+    defer: () => void;
+    ensureDeferredFinished: () => Promise<void>;
+    interaction: RepliableInteraction;
+}
+
+interface ChatInteractionBasedContext extends InteractionBasedContext {
     interaction: ChatInputCommandInteraction;
 }
 
-export { Context, GuildContext, InteractionBasedContext, MessageBasedContext };
+type ComponentInteraction = Exclude<CollectedInteraction, ModalSubmitInteraction>;
 
+interface ComponentInteractionBasedContext extends InteractionBasedContext {
+    interaction: ComponentInteraction;
+}
+
+export { ChatInteractionBasedContext, ComponentInteractionBasedContext, Context, GuildContext, InteractionBasedContext, MessageBasedContext, MessageReplySignature, InteractionReplySignature };

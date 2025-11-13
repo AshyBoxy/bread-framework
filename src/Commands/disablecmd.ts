@@ -22,19 +22,26 @@ export default new GuildCommand(async (bot, msg, args) => {
         if (userConfig.length < 1)
             msg.reply(strings.get("bread_framework.commands.builtin.disablecmd.show.none", member.displayName));
         else
-            msg.reply(strings.get("bread_framework.commands.builtin.disablecmd.show", member.displayName, userConfig.map((x) => bot.commandByName(x)?.getName() || x).join(", ")));
+            msg.reply(strings.get("bread_framework.commands.builtin.disablecmd.show", member.displayName, userConfig.map((x) => {
+                const cmd = bot.commandByName(x);
+                return `${cmd?.getName() || x}${bot.config.development && cmd ? ` (${cmd.getFullId()}) (${x})` : ` (${x})`}`;
+            }).join(", ")));
 
         return RETURN_CODES.OK;
     } else if (flag === "-r") remove = true;
 
-    if (args.length < 2) return RETURN_CODES.BAD_USAGE;
-
-    const cmd = bot.commandByName(args[1]);
-    if (!remove) {
+    if (flag === "-c") {
+        while (userConfig.length > 0) userConfig.pop();
+        msg.reply(`cleared disabled commands for ${member}`);
+    } else if (!remove) {
+        if (args.length < 2) return RETURN_CODES.BAD_USAGE;
+        const cmd = bot.commandByName(args[1]);
         if (!cmd) return msg.reply(strings.get("bread_framework.commands.builtin.disablecmd.nonexistent_command")), RETURN_CODES.OK;
         userConfig.push(cmd.getFullId());
         msg.reply(strings.get("bread_framework.commands.builtin.disablecmd.disabled", member.displayName, cmd.getName()));
     } else {
+        if (args.length < 2) return RETURN_CODES.BAD_USAGE;
+        const cmd = bot.commandByName(args[1]);
         const i = userConfig.indexOf(cmd?.getFullId() || args[1]);
         if (i < 0)
             msg.reply(strings.get("bread_framework.commands.builtin.disablecmd.not_disabled", member.displayName, cmd?.getName() || args[1]));

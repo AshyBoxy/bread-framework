@@ -4,6 +4,7 @@ import { RETURN_CODES } from "../constants";
 import { Context } from "../Interfaces/Context";
 import Strings from "../strings";
 import { ParsedArguments } from "../Classes/Arguments";
+import { advancedCheck } from "../Classes/Command";
 
 async function runCommand(bot: Client, ctx: Context, args: ParsedArguments, command: Command): Promise<unknown> {
     if (command.disabled)
@@ -19,6 +20,8 @@ async function runCommand(bot: Client, ctx: Context, args: ParsedArguments, comm
     }
     if (command.dmOnly && !ctx.inDm)
         return ctx.send(Strings.get("bread_framework.utils.discord.dm_only"));
+    if (!(command.advancedPermission?.(bot, ctx) ?? true))
+        return ctx.send(Strings.get("bread_framework.utils.discord.bad_permissions"));
     if (command.permission && ctx.inGuild() && bot.guilds.cache.get(ctx.guildId))
         if (!checkPermission(command.permission, <GuildMember>ctx.member))
             return ctx.send(Strings.get("bread_framework.utils.discord.bad_permissions"));
@@ -27,14 +30,23 @@ async function runCommand(bot: Client, ctx: Context, args: ParsedArguments, comm
 
     const cmdRun = await (<Promise<number | void>>command.run(bot, ctx, args))?.catch?.((err) => {
         bot.logger.error(Strings.get("bread_framework.utils.discord.error_log", command.getName(), err?.toString?.() || Strings.get("bread_framework.utils.discord.error_log.empty")));
+        // eslint-disable-next-line no-console
+        console.error(err);
         return RETURN_CODES.ERROR;
     });
 
+    const send = (str: string): void => {
+        if (ctx.isInteractionBased() && ctx.interaction.replied && !ctx.interaction.deferred)
+            ctx.interaction.editReply(str);
+        else
+            ctx.send(str);
+    };
+
     switch (cmdRun) {
         case RETURN_CODES.BAD_USAGE:
-            return ctx.send(Strings.get("bread_framework.utils.discord.bad_usage", bot.config.prefix, command.getUsage()));
+            return send(Strings.get("bread_framework.utils.discord.bad_usage", bot.config.prefix, command.getUsage()));
         case RETURN_CODES.ERROR:
-            return ctx.send(Strings.get("bread_framework.utils.discord.error"));
+            return send(Strings.get("bread_framework.utils.discord.error"));
         default:
             return;
     }
@@ -48,5 +60,7 @@ function checkPermission(permission: PermissionResolvable, member: GuildMember):
     return hasPerm;
 }
 
-export { checkPermission, runCommand };
+const ownerOnlyPermission: advancedCheck = (bot, ctx) => bot.config.owners?.includes(ctx.user.id) ?? false;
+
+export { checkPermission, runCommand, ownerOnlyPermission };
 

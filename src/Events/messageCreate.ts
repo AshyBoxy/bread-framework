@@ -1,8 +1,9 @@
 import { Events } from "discord.js";
 import { BreadClient, BreadMessage, Command, EventHandler, IGuildConfig, MessageContext, strings } from "../..";
-import { Argument, ArgumentType, FlagArgument, ParsedArguments } from "../Classes/Arguments";
+import { Argument, ArgumentType, FlagArgument, NumericArgument, ParsedArguments } from "../Classes/Arguments";
 import * as utils from "../Utils";
 import { runHooks } from "../Utils/hooks";
+import { userRegex } from "../Utils/mentions";
 
 // should guildConfig be in a bread only hook?
 
@@ -42,31 +43,30 @@ export default new EventHandler(Events.MessageCreate, (bot) => async (msg): Prom
     if (cmd.startsWith(prefix)) {
         cmd = cmd.slice(prefix.length);
 
-        // if (bot.commands.get(cmd)) command = bot.commands.get(cmd);
-        // else if (bot.commands.get(<string>bot.aliases.get(cmd))) command = bot.commands.get(<string>bot.aliases.get(cmd));
         const command = bot.commandByName(cmd);
 
-        if (command) {
-            let a: ParseArgumentsReturn;
-            try {
-                a = await parseArguments(bot, command, args.join(" "), msg);
-            } catch (e) {
-                msg.reply(strings.get("bread_framework.utils.discord.bad_usage", prefix, command.getUsage()));
+        if (command && !command.interactionOnly) {
+            if (await runHooks("messageCreate.command", bot.hooks.messageCreate?.command, bot, msg, command, args, prefix)) return;
+            if (command.args.length < 1)
+                utils.discord.runCommand(bot, new MessageContext(msg), args, command);
+            else {
+                let a: ParseArgumentsReturn;
+                try {
+                    a = await parseArguments(bot, command, args.join(" "), msg);
+                } catch (e) {
+                    msg.reply(strings.get("bread_framework.utils.discord.bad_usage", prefix, command.getUsage()));
+                    return;
+                }
+
+                utils.discord.runCommand(bot, new MessageContext(msg), a.args, command);
+
                 return;
             }
-
-            if (a.args.args.length > 0)
-                utils.discord.runCommand(bot, new MessageContext(msg), a.args, command);
-            else
-                utils.discord.runCommand(bot, new MessageContext(msg), args, command);
-            return;
         }
     }
 
     runHooks("messageCreate.notCommand", bot.hooks.messageCreate?.notCommand, bot, msg, cmd, args);
 });
-
-const userRegex = /^<@!?(\d+)>$/;
 
 interface ParseArgumentsReturn { args: ParsedArguments, message: string; }
 
@@ -77,6 +77,8 @@ async function parseArguments(bot: BreadClient, command: Command, message: strin
     const flagArgs = <FlagArgument[]>command.args.filter((x) => x.type === ArgumentType.Flag);
     const stringArgs = command.args.filter((x) => x.type === ArgumentType.String);
     const greedyStringArg = command.args.filter((x) => x.type === ArgumentType.GreedyString)[0];
+    const integerArgs = <NumericArgument<ArgumentType.Integer>[]>command.args.filter((x) => x.type === ArgumentType.Integer);
+    const numberArgs = <NumericArgument<ArgumentType.Number>[]>command.args.filter((x) => x.type === ArgumentType.Number);
     let mentionArg: Argument<ArgumentType.Mention> | undefined = command.args.filter((x) => x.type === ArgumentType.Mention)[0];
 
     const stringSplit = message.split("\"");
@@ -115,17 +117,23 @@ async function parseArguments(bot: BreadClient, command: Command, message: strin
                 if (flagIndex < 0) continue;
                 const arg = flagArgs[flagIndex];
                 flagArgs.splice(flagIndex, 1);
-                args.add(arg, !arg.defVal);
+                args.add(arg, !arg.getDefaultValue());
             }
             continue;
         }
     }
 
+    // TODO:
     // strings
-    // todo
+    // integers and numbers
+    for (const a of [...integerArgs, ...numberArgs]) {
+        const def = a.getDefaultValue();
+        if (def === null && a.required) throw new Error("Got required numeric argument in messageCreate");
+        args.add(a, def);
+    }
 
     // leftover
-    for (const a of flagArgs) args.add(a, a.defVal);
+    for (const a of flagArgs) args.add(a, a.getDefaultValue());
     if (mentionArg && !args.getMention()) args.add(mentionArg, msg.mentions.users.first());
 
     stringSplit[0] = spaced.join(" ");

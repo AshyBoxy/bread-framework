@@ -1,14 +1,16 @@
 import { ApplicationIntegrationType, InteractionContextType } from "discord-api-types/v10";
-import { ApplicationCommandOptionBase, PermissionResolvable, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandStringOption, SlashCommandUserOption } from "discord.js";
+import { ApplicationCommandOptionBase, PermissionResolvable, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandIntegerOption, SlashCommandNumberOption, SlashCommandStringOption, SlashCommandUserOption } from "discord.js";
 import { strings } from "..";
-import { Context } from "../Interfaces/Context";
+import { ComponentInteractionBasedContext, Context } from "../Interfaces/Context";
 import IGeneralCommandData from "../Interfaces/GeneralCommandData";
 import ILogger from "../Interfaces/Logger";
 import IModule from "../Interfaces/Module";
-import { Argument, ArgumentsBuilder, ArgumentType, ParsedArguments } from "./Arguments";
+import { Argument, ArgumentsBuilder, ArgumentType, NumericArgument, ParsedArguments } from "./Arguments";
 import Client from "./Client";
 
 export type run = (this: Command, bot: Client, ctx: Context, args: ParsedArguments) => number | void | Promise<number | void>;
+export type advancedCheck = (this: Command, bot: Client, ctx: Context) => boolean | Promise<boolean>;
+export type runComponent = (this: Command, bot: Client, ctx: ComponentInteractionBasedContext, id: string, data: string[]) => void | Promise<void>;
 
 class Command implements IGeneralCommandData {
 
@@ -27,12 +29,16 @@ class Command implements IGeneralCommandData {
     dmOnly: boolean;
     permission: PermissionResolvable;
     botPermission: PermissionResolvable;
+    advancedPermission?: advancedCheck;
+    runComponent?: runComponent;
 
     messageOnly?: boolean;
     interactionOnly?: boolean;
     userCompatible: boolean;
     userOnly: boolean;
     args: Argument[] = [];
+
+    tmpUnsupportedMessageArgs = false;
 
     module: IModule = {
         name: "None",
@@ -60,6 +66,8 @@ class Command implements IGeneralCommandData {
         this.dmOnly = data.dmOnly || false;
         this.permission = data.permission || [];
         this.botPermission = data.botPermission || [];
+        this.advancedPermission = data.advancedPermission;
+        this.runComponent = data.runComponent;
 
         this.messageOnly = data.messageOnly;
         this.interactionOnly = data.interactionOnly;
@@ -111,13 +119,26 @@ class Command implements IGeneralCommandData {
         if (!this.id && id) this.id = id;
 
         this.updateNs();
-        if (this.#data.args instanceof ArgumentsBuilder)
+        if (this.#data.args instanceof ArgumentsBuilder) {
             this.args = this.#data.args.build(this);
+            // TODO: implement integer and number args in messageCreate
+            if (!this.interactionOnly)
+                for (const arg of this.args)
+                    if (arg.type === ArgumentType.Integer || arg.type === ArgumentType.Number)
+                        if (arg.required) {
+                            this.interactionOnly = true;
+                            this.tmpUnsupportedMessageArgs = true;
+                        }
+        }
     }
 
     createSlashCommand(logger: ILogger | null = null): SlashCommandBuilder {
+        let description = this.getInfo();
+        if (description.length < 1) description = "no description (error)";
+        else if (description.length > 100) description = `${description.slice(0, 85)} (truncated)`;
+
         const slashCommand = new SlashCommandBuilder()
-            .setDescription(this.getInfo())
+            .setDescription(description)
             .setContexts(this.dmOnly ? [InteractionContextType.BotDM] : this.guildOnly ? [InteractionContextType.Guild] : [InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel]);
         try {
             slashCommand.setName(this.getName().toLowerCase().slice(0, 31) || "__broken");
@@ -154,6 +175,25 @@ class Command implements IGeneralCommandData {
                     slashCommand.addBooleanOption(option);
                     break;
                 }
+                case ArgumentType.Integer: {
+                    if (!(arg instanceof NumericArgument)) break; // hm.
+                    const option = new SlashCommandIntegerOption();
+                    this.setCommonSlashCommandOptions(arg, option);
+                    if (arg.minimum !== null) option.setMinValue(arg.minimum);
+                    if (arg.maximum !== null) option.setMaxValue(arg.maximum);
+                    slashCommand.addIntegerOption(option);
+                    break;
+                }
+                case ArgumentType.Number: {
+                    if (!(arg instanceof NumericArgument)) break;
+                    const option = new SlashCommandNumberOption();
+                    this.setCommonSlashCommandOptions(arg, option);
+                    if (arg.minimum !== null) option.setMinValue(arg.minimum);
+                    if (arg.maximum !== null) option.setMaxValue(arg.maximum);
+                    slashCommand.addNumberOption(option);
+                    break;
+                }
+
                 default:
                     logger?.warn(`Unknown argument type ${arg.type} for ${Command.getArgumentName(arg)} in ${this.getName()}`);
                     break;
@@ -172,7 +212,7 @@ class Command implements IGeneralCommandData {
     }
 
     static getDiscordArgumentName(arg: Argument): string {
-        let name = this.getArgumentName(arg).replaceAll(".", "_");
+        let name = this.getArgumentName(arg).replaceAll(".", "_").toLowerCase();
         if (name.length > 31)
             name = `_toolong_${name.slice(-9)}`;
         return name;
@@ -183,6 +223,23 @@ class Command implements IGeneralCommandData {
             .setName(Command.getDiscordArgumentName(arg))
             .setDescription(Command.getArgumentDescription(arg))
             .setRequired(arg.required);
+    }
+
+    makeComponentId(subId = "", data: string[] = []): string {
+        let id = `${this.getFullId()}:${subId}`;
+        if (data.find((d) => d.includes(":"))) throw new Error("Component data cannot include :");
+        if (data.length > 0) id += `:${data.join(":")}`;
+        if (id.length > 100) throw new Error("Component id too long");
+        return id;
+    }
+
+    static parseComponentId(id: string): { commandId: string; subId: string; data: string[]; } | null {
+        const parts = id.split(":");
+        if (parts.length < 2) return null;
+        const commandId = parts[0];
+        const subId = parts[1];
+        const data = parts.slice(2);
+        return { commandId, subId, data };
     }
 }
 

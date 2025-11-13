@@ -65,6 +65,16 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         const warnings: string[] = [];
         const infos: string[] = [];
 
+        const stats: Stats = {
+            events: 0,
+            modules: 0,
+            commands: 0,
+            manualNameCommands: 0,
+            messageOnlyCommands: 0,
+            interactionOnlyCommands: 0,
+            componentCommands: 0
+        };
+
 
         const events: string[] = [];
         type eventFile = { path: string, dir: string; };
@@ -77,6 +87,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
             const event: EventHandler<keyof ClientEvents> = (await import(path.join(eventFile.dir, eventFile.path))).default;
             this.on(event.name, event.execute(<BreadClient>this));
             events.push(event.name);
+            stats.events++;
         }
         infos.push(strings.get("bread_framework.classes.breadclient.events", events.join(", ")));
 
@@ -102,6 +113,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
             }
 
             this.modules.push(module);
+            stats.modules++;
         }
         for (const module of this.modules) {
             const cmdFiles = readdirSync(path.join(module.path.startsWith("/") ? "" : this.config.commandsPath || "", module.path)).filter((x: string) => validFileRegex.test(x));
@@ -122,6 +134,13 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
                 // if (cmd.aliases) for (const alias of cmd.aliases)
                 //     this.aliases.set(alias, cmd.name.toLowerCase());
                 commands.push(cmd.getName());
+                stats.commands++;
+                if (cmd.name === cmd.getName()) stats.manualNameCommands++;
+                if (cmd.messageOnly) stats.messageOnlyCommands++;
+                if (cmd.interactionOnly) stats.interactionOnlyCommands++;
+                if (cmd.runComponent) stats.componentCommands++;
+
+                if (cmd.tmpUnsupportedMessageArgs) warnings.push(`Command ${cmd.getFullId()} is supposed to work as a message command but has required numeric arguments`);
             }
             modulesLog.push(`${strings.get(module.name)} (${commands.join(", ")})`);
         }
@@ -130,6 +149,8 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
 
         if (infos.length > 0) this.logger.info(infos.join("\n"));
         if (warnings.length > 0) this.logger.warn(warnings.join("\n"));
+
+        this.logger.info(`Stats: ${Object.entries(stats).map((x) => `${x[0]}: ${x[1]}`).join(", ")}`);
     }
 
     commandByName(name: string): Command | null {
@@ -145,6 +166,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         const cmd = this.commands.get(id);
         if (cmd) return cmd;
         for (const c of this.commands.values()) {
+            if (c.getFullId() === id) return c;
             if (`${c.ns}.${c.id}` === id) return c;
             if (c.id === id) return c;
         }
