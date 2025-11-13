@@ -1,3 +1,4 @@
+import { Events } from "discord.js";
 import { BreadClient, BreadMessage, Command, EventHandler, IGuildConfig, MessageContext, strings } from "../..";
 import { Argument, ArgumentType, FlagArgument, ParsedArguments } from "../Classes/Arguments";
 import * as utils from "../Utils";
@@ -5,7 +6,7 @@ import { runHooks } from "../Utils/hooks";
 
 // should guildConfig be in a bread only hook?
 
-export default new EventHandler("messageCreate", (bot) => async (msg): Promise<void> => {
+export default new EventHandler(Events.MessageCreate, (bot) => async (msg): Promise<void> => {
     if (await runHooks("messageCreate.immediately", bot.hooks.messageCreate?.immediately, bot, msg)) return;
     if (msg.author.bot) return;
 

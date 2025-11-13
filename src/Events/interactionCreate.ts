@@ -1,10 +1,10 @@
-import { MessageFlags } from "discord.js";
+import { Events, MessageFlags } from "discord.js";
 import { Command, Utils } from "..";
 import { ArgumentType, FlagArgument, ParsedArguments } from "../Classes/Arguments";
 import EventHandler from "../Classes/EventHandler";
 import InteractionContext from "../Classes/InteractionContext";
 
-export default new EventHandler("interactionCreate", (bot) => (int): void => {
+export default new EventHandler(Events.InteractionCreate, (bot) => (int): void => {
     if (int.isButton())
         int.reply(`i don't know how to handle buttons (${int.user.displayName} pressed it)`);
     else if (int.isChatInputCommand()) {
