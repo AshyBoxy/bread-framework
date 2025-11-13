@@ -1,4 +1,4 @@
-import { ClientOptions } from "discord.js";
+import { ClientOptions, Snowflake } from "discord.js";
 
 interface WebhookIdTokenConfig {
     id: string;
@@ -22,6 +22,7 @@ interface ClientConfig {
     eventsPath?: string;
     commandsPath?: string;
     development?: boolean;
+    owners?: Snowflake[];
 }
 
 // eslint-disable-next-line
