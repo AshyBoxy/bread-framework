@@ -25,4 +25,4 @@ export * from "./Classes/Arguments";
 
 
 // export * as newstrings from "./strings/newstrings";
-export { default as strings, default as Strings } from "./strings";
+export { default as strings, default as Strings, TranslationData } from "./strings";
