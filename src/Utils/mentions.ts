@@ -25,4 +25,7 @@ function idFromMention(arg: string): string | null {
     return id;
 }
 
+export const userRegex = /^<@!?(\d+)>$/;
+export const userGlobalRegex = /<@!?(\d+)>/g;
+
 export { memberFromMention, userFromMention, idFromMention };
