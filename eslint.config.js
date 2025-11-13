@@ -57,9 +57,7 @@ export default [
             yoda: "error",
 
             "array-bracket-newline": [
-                "error", {
-                    minItems: 2
-                }
+                "error", "consistent"
             ],
 
             camelcase: "error",
