@@ -8,8 +8,8 @@ export default new Command(async function (bot, ctx, args) {
     // const input = args.join(" ").toLowerCase();
     const input = args.getGreedyString("help")
     // const command = bot.commands.get(input) || bot.commands.get(<string>bot.aliases.get(input));
-    const command = bot.commandByName(input);
-    const module = bot.modules.find((x) => strings.get(x.name).toLowerCase() === input);
+    const command = input ? bot.commandByName(input) : null;
+    const module = input ? bot.modules.find((x) => strings.get(x.name).toLowerCase() === input) : null;
     const embed = new BreadEmbed()
         .setColor(ctx.guild?.members.me?.displayColor || 0xff00ff); // todo: make this not hardcoded
 
