@@ -23,6 +23,8 @@ export { default as InteractionContext } from "./Classes/InteractionContext";
 
 export * from "./Classes/Arguments";
 
+export * from "./Utils/hooks";
+
 
 // export * as newstrings from "./strings/newstrings";
-export { default as strings, default as Strings, TranslationData } from "./strings";
+export { default as strings, default as Strings } from "./strings";

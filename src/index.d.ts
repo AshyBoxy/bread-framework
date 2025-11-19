@@ -12,4 +12,8 @@ export { default as BreadMessage, default as Message } from "./Interfaces/Messag
 export { default as Database } from "./Interfaces/Database";
 export * from "./Interfaces/Context";
 
+export { TranslationData } from "./strings";
+
+export * from "./Utils/hooks";
+
 export * from "./";

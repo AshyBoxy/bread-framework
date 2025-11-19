@@ -1,14 +1,14 @@
 import { APIUser, Client, ClientEvents, Collection, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
 import { readdirSync } from "fs";
 import * as path from "path";
-import { strings } from "..";
+import { HOOK_CODES, strings } from "..";
 import IConfig from "../Interfaces/Config";
 import IDatabase from "../Interfaces/Database";
 import IGuildConfig from "../Interfaces/GuildConfig";
 import ILogger from "../Interfaces/Logger";
 import IModule from "../Interfaces/Module";
 import { logger } from "../Utils";
-import { HooksType, setHookLogger } from "../Utils/hooks";
+import { Hooks, HookPhases, setHookLogger, HooksType, HookPhasesFor, HookFn } from "../Utils/hooks";
 import Command from "./Command";
 import EventHandler from "./EventHandler";
 import MapDB from "./MapDB";
@@ -43,8 +43,15 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
 
     logger: ILogger;
 
+    hooks: HooksType<Databases> = {};
+
+    #setupDone = false;
+    get setupDone(): boolean {
+        return this.#setupDone;
+    }
+
     constructor(
-        config: IConfig, dbs: DBRecord<Databases & BreadUserDBs>, modules: IModule[] = [], public hooks: HooksType<Databases> = {}
+        config: IConfig, dbs: DBRecord<Databases & BreadUserDBs>, modules: IModule[] = [], hooks: HooksType<Databases> = {}
     ) {
         super(config);
         this.config = config;
@@ -56,12 +63,31 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
 
         this.logger = new logger(this.config.logging || {});
 
+        for (const hookName of <Hooks[]>Object.keys(hooks)) {
+            this.hooks[hookName] = {};
+            const thisPhaseMap = <Record<string, never[]>>this.hooks[hookName];
+            const thatPhaseMap = <Record<string, never[]>>hooks[hookName];
+            for (const phase of <HookPhases[]>Object.keys(thatPhaseMap || {}))
+                thisPhaseMap[phase] = <never[]>[...thatPhaseMap[phase] || []];
+        }
         setHookLogger(this.logger);
 
         if (config.token) this.rest.setToken(config.token);
     }
 
+    addHooks<H extends Hooks, P extends HookPhasesFor<H>>(hookName: H, phase: P, ...hooks: ((...args: Parameters<HookFn<H, P>>) => Promise<HOOK_CODES> | HOOK_CODES)[]): void {
+        if (this.setupDone) throw new Error("Cannot add hooks after setup");
+
+        if (!this.hooks[hookName]) this.hooks[hookName] = {};
+        const phaseMap = <Record<string, never[]>>this.hooks[hookName];
+        if (!phaseMap[<string>phase]) phaseMap[<string>phase] = [];
+        phaseMap[<string>phase].push(...<never[]>hooks);
+    }
+
     async setup(): Promise<void> {
+        if (this.setupDone) throw new Error("Client is already set up");
+        this.#setupDone = true;
+
         const warnings: string[] = [];
         const infos: string[] = [];
 
