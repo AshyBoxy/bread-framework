@@ -19,9 +19,13 @@ export interface BreadUserDBs extends Record<string, IDatabase<any>> { }
 type DBRecord<K extends object> = {
     [P in keyof K]: K[P]
 };
-type RequiredDBs = {
+interface RequiredDBs {
     guildConfigs: IDatabase<IGuildConfig>;
-};
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type UnknownDBs = Record<string, IDatabase<any>>;
+
+type Databases = DBRecord<UnknownDBs & BreadUserDBs & RequiredDBs>;
 
 const validFileRegex = /\.[tj]s$/;
 const fileSplitRegex = /\.[tj]s/;
@@ -29,8 +33,7 @@ const fileSplitRegex = /\.[tj]s/;
 // using true here basically makes typescript assume the bot is ready
 // meaning it won't enforce type checking
 // this probably shouldn't be left like this(?)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<string, IDatabase<unknown>>> extends Client<true> {
+class BreadClient extends Client<true> {
     static BuiltInEventPath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "Events");
     static BuiltInCommandsPath = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "Commands");
 
@@ -39,7 +42,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
     commands: Collection<string, Command> = new Collection();
     aliases: Collection<string, string> = new Collection();
 
-    dbs: DBRecord<Databases & BreadUserDBs & RequiredDBs>;
+    dbs: Databases;
 
     logger: ILogger;
 
@@ -52,7 +55,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
     }
 
     constructor(
-        config: IConfig, dbs: DBRecord<Databases & BreadUserDBs>, modules: IModule[] = [], hooks: HooksType<Databases> = {}
+        config: IConfig, dbs: DBRecord<UnknownDBs & Partial<BreadUserDBs>>, modules: IModule[] = [], hooks: HooksType<Databases> = {}
     ) {
         super(config);
         this.config = config;
