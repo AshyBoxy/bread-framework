@@ -43,6 +43,7 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
 
     logger: ILogger;
 
+    moduleSearchPaths: string[] = [];
     hooks: HooksType<Databases> = {};
 
     #setupDone = false;
@@ -63,6 +64,9 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
 
         this.logger = new logger(this.config.logging || {});
 
+        this.addModuleSearchPath(BreadClient.BuiltInCommandsPath);
+        if (this.config.commandsPath) this.addModuleSearchPath(this.config.commandsPath);
+
         for (const hookName of <Hooks[]>Object.keys(hooks)) {
             this.hooks[hookName] = {};
             const thisPhaseMap = <Record<string, never[]>>this.hooks[hookName];
@@ -73,6 +77,11 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
         setHookLogger(this.logger);
 
         if (config.token) this.rest.setToken(config.token);
+    }
+
+    addModuleSearchPath(p: string): void {
+        if (this.setupDone) throw new Error("Cannot add module search paths after setup");
+        this.moduleSearchPaths.unshift(p);
     }
 
     addHooks<H extends Hooks, P extends HookPhasesFor<H>>(hookName: H, phase: P, ...hooks: ((...args: Parameters<HookFn<H, P>>) => Promise<HOOK_CODES> | HOOK_CODES)[]): void {
@@ -120,10 +129,12 @@ class BreadClient<Databases extends Record<string, IDatabase<any>> = Record<stri
 
         const modulesLog: string[] = [];
 
-        const moduleFiles = [
-            ...this.config.commandsPath ? (<(path: string, opts: object) => string[]>readdirSync)(this.config.commandsPath, { recursive: true }).filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(<string>this.config.commandsPath, x)) : [],
-            ...(<(path: string, opts: object) => string[]>readdirSync)(BreadClient.BuiltInCommandsPath, { recursive: true }).filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(BreadClient.BuiltInCommandsPath, x))
-        ];
+        const moduleFiles: string[] = [];
+        for (const searchPath of this.moduleSearchPaths) {
+            const files = readdirSync(searchPath, { recursive: true, encoding: "utf8" });
+            const mFiles = files.filter((x) => /module\.jso?n?$/.test(x)).map((x) => path.join(searchPath, x));
+            moduleFiles.push(...mFiles);
+        }
         for (const file of moduleFiles) {
             const module = {
                 path: path.dirname(file),
