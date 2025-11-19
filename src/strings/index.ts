@@ -20,6 +20,7 @@ class Strings {
     static instance = new Strings();
     static addSource = Strings.instance.addSource;
     static addDefaultSource = Strings.instance.addDefaultSource;
+    static setupAddDefaultSource = Strings.instance.setupAddDefaultSource;
     static removeSource = Strings.instance.removeSource;
     static clearSources = Strings.instance.clearSources;
     static updateSources = Strings.instance.updateSources;
@@ -52,6 +53,12 @@ class Strings {
         this.updateSources();
         return this;
     };
+
+    setupAddDefaultSource = (source: TranslationData, start = true): this => {
+        this.addDefaultSource(source, start);
+        this.clearSources();
+        return this;
+    }
 
     removeSource = (source: TranslationData): this => {
         this.sources = this.sources.filter((x) => x.name !== source.name);
