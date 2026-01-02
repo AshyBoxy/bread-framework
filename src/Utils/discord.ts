@@ -1,10 +1,10 @@
-import { GuildMember, PermissionResolvable } from "discord.js";
-import { Client, Command } from "../..";
+import { GuildMember, InteractionResponse, PermissionResolvable } from "discord.js";
+import { BreadMessage, Client, Command } from "../..";
+import { ParsedArguments } from "../Classes/Arguments";
+import { advancedCheck } from "../Classes/Command";
 import { RETURN_CODES } from "../constants";
 import { Context } from "../Interfaces/Context";
 import Strings from "../strings";
-import { ParsedArguments } from "../Classes/Arguments";
-import { advancedCheck } from "../Classes/Command";
 
 async function runCommand(bot: Client, ctx: Context, args: ParsedArguments, command: Command): Promise<unknown> {
     if (command.disabled)
@@ -62,5 +62,28 @@ function checkPermission(permission: PermissionResolvable, member: GuildMember):
 
 const ownerOnlyPermission: advancedCheck = (bot, ctx) => bot.config.owners?.includes(ctx.user.id) ?? false;
 
-export { checkPermission, runCommand, ownerOnlyPermission };
+export { checkPermission, ownerOnlyPermission, runCommand };
 
+export async function sendSplit(ctx: Context, content: string, deferred?: InteractionResponse): Promise<BreadMessage> {
+    if (ctx.isMessageBased()) {
+        if (content.length > 1950) {
+            const next = content.slice(1950).trim();
+            const msg = ctx.send(content.slice(0, 1950));
+            if (next.length < 1) return <Promise<BreadMessage>>msg;
+            await msg;
+            return sendSplit(ctx, next);
+        }
+        return <Promise<BreadMessage>>ctx.send(content);
+    } else if (ctx.isInteractionBased() && deferred) {
+        if (content.length <= 1950) return <Promise<BreadMessage>>deferred.edit(content);
+        let c = content.slice(1950).trim();
+        let m = await deferred.edit(content.slice(0, 1950));
+        while (c.length > 0) {
+            const o = c.slice(0, 1950).trim();
+            c = c.slice(1950).trim();
+            m = await ctx.interaction.followUp(o);
+        }
+        return <BreadMessage>m;
+    }
+    throw new Error(`Can't handle context ${ctx}`);
+}
