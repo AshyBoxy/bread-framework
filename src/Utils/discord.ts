@@ -64,7 +64,7 @@ const ownerOnlyPermission: advancedCheck = (bot, ctx) => bot.config.owners?.incl
 
 export { checkPermission, ownerOnlyPermission, runCommand };
 
-export async function sendSplit(ctx: Context, content: string, deferred?: InteractionResponse): Promise<BreadMessage> {
+export async function sendSplit(ctx: Context, content: string): Promise<BreadMessage> {
     if (ctx.isMessageBased()) {
         if (content.length > 1950) {
             const next = content.slice(1950).trim();
@@ -74,10 +74,10 @@ export async function sendSplit(ctx: Context, content: string, deferred?: Intera
             return sendSplit(ctx, next);
         }
         return <Promise<BreadMessage>>ctx.send(content);
-    } else if (ctx.isInteractionBased() && deferred) {
-        if (content.length <= 1950) return <Promise<BreadMessage>>deferred.edit(content);
+    } else if (ctx.isInteractionBased() && ctx.interaction.deferred) {
+        if (content.length <= 1950) return <Promise<BreadMessage>>ctx.interaction.editReply(content);
         let c = content.slice(1950).trim();
-        let m = await deferred.edit(content.slice(0, 1950));
+        let m = await ctx.interaction.editReply(content.slice(0, 1950));
         while (c.length > 0) {
             const o = c.slice(0, 1950).trim();
             c = c.slice(1950).trim();
