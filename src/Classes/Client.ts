@@ -144,6 +144,8 @@ class BreadClient extends Client<true> {
                 ...(await import(file, file.endsWith(".json") ? { with: { type: "json" } } : undefined)).default
             };
 
+            if (module.development && !this.config.development) continue;
+
             if (module.ns) {
                 const id = module.id || path.dirname(file);
                 if (!module.name)

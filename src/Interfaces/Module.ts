@@ -4,4 +4,5 @@ export default interface IModule {
     description: string;
     ns?: string;
     id?: string;
+    development?: boolean;
 }
