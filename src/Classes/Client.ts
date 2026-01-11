@@ -1,5 +1,5 @@
 import { APIApplicationCommand, APIUser, Client, ClientEvents, Collection, RESTGetAPIApplicationCommandsResult, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
-import { readdirSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "fs";
 import * as path from "path";
 import { HOOK_CODES, strings } from "..";
 import IConfig from "../Interfaces/Config";
@@ -177,6 +177,7 @@ class BreadClient extends Client<true> {
             const commands: string[] = [];
             for (const cmdFile of cmdFiles) {
                 const cmd: Command = (await import(path.join(module.path.startsWith("/") ? "" : this.config.commandsPath || "", module.path, cmdFile))).default;
+                if (cmd === undefined) continue; // empty file
                 cmd.module = module;
 
                 cmd.setNs(module.ns, path.basename(cmdFile).split(".").slice(0, -1).join(".") || path.basename(cmdFile));
@@ -204,7 +205,12 @@ class BreadClient extends Client<true> {
 
         if (this.config.commandsSavePath) {
             this.logger.info("Loading saved slash commands");
-            this.storedCommands = JSON.parse(readFileSync(this.config.commandsSavePath, { encoding: "utf8" }));
+            if (!existsSync(this.config.commandsSavePath)) {
+                this.logger.warn("No saved commands file found, you should probably publish them");
+                writeFileSync(this.config.commandsSavePath, JSON.stringify(this.storedCommands, null, 4), { encoding: "utf8" });
+            }
+            else
+                this.storedCommands = JSON.parse(readFileSync(this.config.commandsSavePath, { encoding: "utf8" }));
         }
 
         if (infos.length > 0) this.logger.info(infos.join("\n"));
@@ -275,7 +281,7 @@ class BreadClient extends Client<true> {
         // need to do these one by one so we can attach our ids
 
         // TODO: skipping unchanged commands (done)
-        // TODO: updating existing commands
+        // TODO: updating existing commands (done)
         // TODO: deleting removed commands
 
         const res: StoredCommand[] = [];
@@ -289,6 +295,7 @@ class BreadClient extends Client<true> {
             });
         }
 
+        const patch: typeof intermediate = [];
         if (this.config.commandsSavePath && !forceAll) {
             const saved: StoredCommand[] = JSON.parse(readFileSync(this.config.commandsSavePath, { encoding: "utf8" }));
             let unchanged = 0;
@@ -310,8 +317,8 @@ class BreadClient extends Client<true> {
                     return false;
                 }
 
-                // TODO: patch in this case. this will probably result in stale commands when names are changed
-                return true;
+                patch.push(x);
+                return false;
             });
             this.logger.info(`Skipping ${unchanged} unchanged commands`);
         }
@@ -328,6 +335,28 @@ class BreadClient extends Client<true> {
         }
         this.logger.info(`Published ${published} new commands`);
 
+        if (patch.length > 0) {
+            const saved: StoredCommand[] = JSON.parse(readFileSync(this.config.commandsSavePath!, { encoding: "utf8" }));
+            let patched = 0;
+            for (const cmd of patch) {
+                const existing = saved.find((y) => y.id === cmd.id);
+                if (!existing) {
+                    this.logger.warn(`Command ${cmd.id} marked for patching, but unable to find existing command`);
+                    continue;
+                }
+
+                const r = <APIApplicationCommand>await rest.patch(Routes.applicationCommand(client.id, existing.raw.id), { body: cmd.raw });
+                res.push({
+                    id: cmd.id,
+                    args: cmd.args,
+                    raw: r
+                });
+
+                patched++;
+            }
+            this.logger.info(`Patched ${patched} existing commands`);
+        }
+
         if (this.config.commandsSavePath) {
             this.logger.info("Saving slash commands");
             writeFileSync(this.config.commandsSavePath, JSON.stringify(res, null, 4), { encoding: "utf8" });
@@ -340,6 +369,19 @@ class BreadClient extends Client<true> {
         if (a.name !== b.name) return false;
         if (a.description !== b.description) return false;
         if ((a.options?.length ?? 0) !== (b.options?.length ?? 0)) return false;
+
+        const aOptions = (a.options ?? []).sort((x, y) => x.name.localeCompare(y.name));
+        const bOptions = (b.options ?? []).sort((x, y) => x.name.localeCompare(y.name));
+
+        for (let i = 0; i < aOptions.length; i++) {
+            const aOpt = aOptions[i];
+            const bOpt = bOptions[i];
+            if (aOpt.name !== bOpt.name) return false;
+            if (aOpt.description !== bOpt.description) return false;
+            if (aOpt.type !== bOpt.type) return false;
+            if ((aOpt.required ?? false) !== (bOpt.required ?? false)) return false;
+        }
+
         // TODO: be more thorough
         return true;
     }

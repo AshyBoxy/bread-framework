@@ -107,6 +107,7 @@ class Command implements IGeneralCommandData {
     }
 
     private updateNs(): void {
+        // TODO: these need to be consistent with arg ids
         const moduleId = this.module.id ? `.${this.module.id}` : "";
 
         this.name = this.#data.name || `${this.ns}.commands${moduleId}.${this.id}.name`;
@@ -219,7 +220,7 @@ class Command implements IGeneralCommandData {
         let name = this.getArgumentName(arg).replaceAll(".", "_").toLowerCase();
         if (name.length > 31) {
             // eslint-disable-next-line no-console
-            console.error(`argument name ${name} too long`)
+            console.error(`argument name ${name} too long`);
             name = `_toolong_${name.slice(-9)}`;
         }
         return name;
