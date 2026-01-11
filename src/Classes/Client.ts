@@ -8,7 +8,7 @@ import IGuildConfig from "../Interfaces/GuildConfig";
 import ILogger from "../Interfaces/Logger";
 import IModule from "../Interfaces/Module";
 import { logger } from "../Utils";
-import { Hooks, HookPhases, setHookLogger, HooksType, HookPhasesFor, HookFn } from "../Utils/hooks";
+import { HookFn, HookPhases, HookPhasesFor, Hooks, HooksType, setHookLogger } from "../Utils/hooks";
 import Command from "./Command";
 import EventHandler from "./EventHandler";
 import MapDB from "./MapDB";
@@ -59,7 +59,7 @@ class BreadClient extends Client<true> {
     logger: ILogger;
 
     moduleSearchPaths: string[] = [];
-    hooks: HooksType<Databases> = {};
+    hooks: HooksType = {};
 
     #setupDone = false;
     get setupDone(): boolean {
@@ -67,7 +67,7 @@ class BreadClient extends Client<true> {
     }
 
     constructor(
-        config: IConfig, dbs: DBRecord<UnknownDBs & Partial<BreadUserDBs>>, modules: IModule[] = [], hooks: HooksType<Databases> = {}
+        config: IConfig, dbs: DBRecord<UnknownDBs & Partial<BreadUserDBs>>, modules: IModule[] = [], hooks: HooksType = {}
     ) {
         super(config);
         this.config = config;

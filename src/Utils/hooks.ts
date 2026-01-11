@@ -31,6 +31,7 @@ export enum HookPhases {
 
 type HookPhaseMap<H extends Hooks> = NonNullable<HooksType[H]>;
 export type HookPhasesFor<H extends Hooks> = keyof HookPhaseMap<H>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type HookFn<H extends Hooks, P extends HookPhasesFor<H>> = Extract<NonNullable<HookPhaseMap<H>[P]> extends (infer F)[] ? F : never, (...args: any) => any>;
 
 export enum HOOK_CODES {
