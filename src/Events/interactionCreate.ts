@@ -33,33 +33,49 @@ export default new EventHandler(Events.InteractionCreate, (bot) => async (int): 
         // int.reply("how do commands work");
         // TODO: just this entirely, but also commandByName
         // although this should probably search on something slightly different
-        const cmd = int.commandName.toLowerCase();
-        const command = bot.commandByName(cmd);
+
+        let command: Command | null = null;
+        if (bot.storedCommands.length > 0) {
+            const stored = bot.storedCommands.find((c) => c.raw.id === int.commandId);
+            if (stored) command = bot.commandById(stored.id);
+        }
+        // legacy fallback
+        if (!command) {
+            const cmd = int.commandName.toLowerCase();
+            command = bot.commandByName(cmd);
+        }
 
         if (!command) return void int.reply({ content: "unknown command??", flags: MessageFlags.Ephemeral });
 
         const args = new ParsedArguments();
 
         for (const arg of command.args) {
-            if (arg.required && !int.options.get(Command.getDiscordArgumentName(arg))) return void int.reply({ content: "missing a required argument??", flags: MessageFlags.Ephemeral });
+            let argName = Command.getDiscordArgumentName(arg);
+
+            if (bot.storedCommands.length > 0) {
+                const stored = bot.storedCommands.find((c) => c.raw.id === int.commandId);
+                if (stored) argName = stored.args[arg.id];
+            }
+
+            if (arg.required && !int.options.get(argName)) return void int.reply({ content: "missing a required argument??", flags: MessageFlags.Ephemeral });
             switch (arg.type) {
                 case ArgumentType.String:
                 case ArgumentType.GreedyString:
-                    args.add(arg, int.options.getString(Command.getDiscordArgumentName(arg)));
+                    args.add(arg, int.options.getString(argName));
                     break;
                 // TODO: change mention to actually use the mention option type
                 case ArgumentType.User:
                 case ArgumentType.Mention:
-                    args.add(arg, int.options.getUser(Command.getDiscordArgumentName(arg)));
+                    args.add(arg, int.options.getUser(argName));
                     break;
                 case ArgumentType.Flag:
-                    args.add(arg, int.options.getBoolean(Command.getDiscordArgumentName(arg)) ?? (<FlagArgument>arg).getDefaultValue());
+                    args.add(arg, int.options.getBoolean(argName) ?? (<FlagArgument>arg).getDefaultValue());
                     break;
                 case ArgumentType.Integer:
-                    args.add(arg, int.options.getInteger(Command.getDiscordArgumentName(arg)) ?? (<NumericArgument<ArgumentType.Integer>>arg).getDefaultValue());
+                    args.add(arg, int.options.getInteger(argName) ?? (<NumericArgument<ArgumentType.Integer>>arg).getDefaultValue());
                     break;
                 case ArgumentType.Number:
-                    args.add(arg, int.options.getNumber(Command.getDiscordArgumentName(arg)) ?? (<NumericArgument<ArgumentType.Number>>arg).getDefaultValue());
+                    args.add(arg, int.options.getNumber(argName) ?? (<NumericArgument<ArgumentType.Number>>arg).getDefaultValue());
                     break;
                 default:
                     bot.logger.warn(`Unknown argument type ${arg.type} for ${Command.getArgumentName(arg)} in ${command.getName()}`);

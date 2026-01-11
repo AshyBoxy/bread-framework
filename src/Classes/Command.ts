@@ -217,14 +217,17 @@ class Command implements IGeneralCommandData {
 
     static getDiscordArgumentName(arg: Argument): string {
         let name = this.getArgumentName(arg).replaceAll(".", "_").toLowerCase();
-        if (name.length > 31)
+        if (name.length > 31) {
+            // eslint-disable-next-line no-console
+            console.error(`argument name ${name} too long`)
             name = `_toolong_${name.slice(-9)}`;
+        }
         return name;
     }
 
     private setCommonSlashCommandOptions(arg: Argument, command: ApplicationCommandOptionBase, args: Record<string, string>): void {
         const name = Command.getDiscordArgumentName(arg);
-        args[name] = arg.id;
+        args[arg.id] = name;
         command
             .setName(name)
             .setDescription(Command.getArgumentDescription(arg))

@@ -30,7 +30,7 @@ type Databases = DBRecord<UnknownDBs & BreadUserDBs & RequiredDBs>;
 interface StoredCommand {
     id: string;
     /**
-     * argument name to argument id
+     * argument id (framework) to argument name (discord)
      */
     args: Record<string, string>;
     // technically we only need to store the discord id
@@ -65,6 +65,8 @@ class BreadClient extends Client<true> {
     get setupDone(): boolean {
         return this.#setupDone;
     }
+
+    storedCommands: StoredCommand[] = [];
 
     constructor(
         config: IConfig, dbs: DBRecord<UnknownDBs & Partial<BreadUserDBs>>, modules: IModule[] = [], hooks: HooksType = {}
@@ -200,6 +202,10 @@ class BreadClient extends Client<true> {
         }
         infos.push(strings.get("bread_framework.classes.breadclient.modules", modulesLog.join("; ")));
 
+        if (this.config.commandsSavePath) {
+            this.logger.info("Loading saved slash commands");
+            this.storedCommands = JSON.parse(readFileSync(this.config.commandsSavePath, { encoding: "utf8" }));
+        }
 
         if (infos.length > 0) this.logger.info(infos.join("\n"));
         if (warnings.length > 0) this.logger.warn(warnings.join("\n"));
@@ -247,7 +253,7 @@ class BreadClient extends Client<true> {
         return client;
     }
 
-    async publishCommands(guildIds: string[] = []): Promise<void> {
+    async publishCommands(guildIds: string[] = [], forceAll = false): Promise<void> {
         void guildIds;
         this.logger.info("Publishing slash commands");
         if (!this.config.commandsSavePath) this.logger.warn("No commandsSavePath configured, slash commands will be broken");
@@ -258,7 +264,7 @@ class BreadClient extends Client<true> {
 
         const cmds: Command[] = this.commands.filter((x) => !x.messageOnly).map((x) => x);
 
-        this.logger.info(`Publishing commands: ${cmds.map((x) => x.name).join(", ")}`);
+        this.logger.info(`Publishing commands: ${cmds.map((x) => x.getName()).join(", ")}`);
 
         const discordKnown = <RESTGetAPIApplicationCommandsResult>await rest.get(Routes.applicationCommands(client.id));
 
@@ -283,7 +289,7 @@ class BreadClient extends Client<true> {
             });
         }
 
-        if (this.config.commandsSavePath) {
+        if (this.config.commandsSavePath && !forceAll) {
             const saved: StoredCommand[] = JSON.parse(readFileSync(this.config.commandsSavePath, { encoding: "utf8" }));
             let unchanged = 0;
             intermediate = intermediate.filter((x) => {
