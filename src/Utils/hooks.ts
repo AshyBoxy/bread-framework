@@ -1,21 +1,23 @@
 import { Command, strings } from "..";
 import BreadClient from "../Classes/Client";
-import IDatabase from "../Interfaces/Database";
 import ILogger from "../Interfaces/Logger";
 import BreadMessage from "../Interfaces/Message";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface HooksType<Databases extends Record<string, IDatabase<any>>> {
+export interface HooksType {
     [Hooks.MessageCreate]?: {
-        [HookPhases.Immediately]?: ((bot: BreadClient<Databases>, msg: BreadMessage) => Promise<HOOK_CODES> | HOOK_CODES)[];
-        [HookPhases.BeforeCommand]?: ((bot: BreadClient<Databases>, msg: BreadMessage, cmd: string, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
-        [HookPhases.NotCommand]?: ((bot: BreadClient<Databases>, msg: BreadMessage, cmd: string, args: string[]) => Promise<HOOK_CODES> | HOOK_CODES)[];
-        [HookPhases.Command]?: ((bot: BreadClient<Databases>, msg: BreadMessage, command: Command, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
+        [HookPhases.Immediately]?: ((bot: BreadClient, msg: BreadMessage) => Promise<HOOK_CODES> | HOOK_CODES)[];
+        [HookPhases.BeforeCommand]?: ((bot: BreadClient, msg: BreadMessage, cmd: string, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
+        [HookPhases.NotCommand]?: ((bot: BreadClient, msg: BreadMessage, cmd: string, args: string[]) => Promise<HOOK_CODES> | HOOK_CODES)[];
+        [HookPhases.Command]?: ((bot: BreadClient, msg: BreadMessage, command: Command, args: string[], prefix: string) => Promise<HOOK_CODES> | HOOK_CODES)[];
     };
+    [Hooks.ClientReady]?: {
+        [HookPhases.Immediately]?: ((bot: BreadClient) => Promise<HOOK_CODES> | HOOK_CODES)[];
+    }
 };
 
 export enum Hooks {
-    MessageCreate = "messageCreate"
+    MessageCreate = "messageCreate",
+    ClientReady = "clientReady"
 }
 
 export enum HookPhases {
@@ -27,7 +29,7 @@ export enum HookPhases {
     Test = "test"
 }
 
-type HookPhaseMap<H extends Hooks> = NonNullable<HooksType<never>[H]>;
+type HookPhaseMap<H extends Hooks> = NonNullable<HooksType[H]>;
 export type HookPhasesFor<H extends Hooks> = keyof HookPhaseMap<H>;
 export type HookFn<H extends Hooks, P extends HookPhasesFor<H>> = Extract<NonNullable<HookPhaseMap<H>[P]> extends (infer F)[] ? F : never, (...args: any) => any>;
 
