@@ -1,5 +1,5 @@
-import { APIUser, Client, ClientEvents, Collection, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
-import { readdirSync } from "fs";
+import { APIApplicationCommand, APIUser, Client, ClientEvents, Collection, RESTGetAPIApplicationCommandsResult, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
+import { readdirSync, readFileSync, writeFileSync } from "fs";
 import * as path from "path";
 import { HOOK_CODES, strings } from "..";
 import IConfig from "../Interfaces/Config";
@@ -26,6 +26,18 @@ interface RequiredDBs {
 type UnknownDBs = Record<string, IDatabase<any>>;
 
 type Databases = DBRecord<UnknownDBs & BreadUserDBs & RequiredDBs>;
+
+interface StoredCommand {
+    id: string;
+    /**
+     * argument name to argument id
+     */
+    args: Record<string, string>;
+    // technically we only need to store the discord id
+    raw: APIApplicationCommand;
+}
+
+type RawCommandTypes = APIApplicationCommand | RESTPostAPIChatInputApplicationCommandsJSONBody;
 
 const validFileRegex = /\.[tj]s$/;
 const fileSplitRegex = /\.[tj]s/;
@@ -236,33 +248,94 @@ class BreadClient extends Client<true> {
     }
 
     async publishCommands(guildIds: string[] = []): Promise<void> {
+        void guildIds;
         this.logger.info("Publishing slash commands");
+        if (!this.config.commandsSavePath) this.logger.warn("No commandsSavePath configured, slash commands will be broken");
         if (!this.config.token) throw new Error("No token provided");
         const rest = this.rest;
 
         const client = await this.getClientUser();
 
-        const cmds: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
-        this.commands.forEach((x) => {
-            // if (x.slashCommand.name === "ping")
-            //     cmds.push(x.slashCommand.toJSON());
-            if (x.messageOnly) return;
-            cmds.push(x.createSlashCommand(this.logger).toJSON());
-        });
+        const cmds: Command[] = this.commands.filter((x) => !x.messageOnly).map((x) => x);
+
         this.logger.info(`Publishing commands: ${cmds.map((x) => x.name).join(", ")}`);
 
-        if (guildIds.length > 0) {
-            let guilds: unknown[] | string = guildIds.map(async (x) => ((<Record<string, string>>(await rest.get(Routes.guild(x)))).name));
-            for (let i = 0; i < guilds.length; i++) guilds[i] = await guilds[i];
-            guilds = guilds.join(", ");
-            this.logger.debug(`Publishing commands for guilds: ${guilds}`);
+        const discordKnown = <RESTGetAPIApplicationCommandsResult>await rest.get(Routes.applicationCommands(client.id));
 
+        // TODO: guild specific commands
 
-            for (const g of guildIds) await rest.put(Routes.applicationGuildCommands(client.id, g), { body: cmds });
-        } else {
-            this.logger.debug("Publishing commands globally");
-            await rest.put(Routes.applicationCommands(client.id), { body: cmds });
+        this.logger.debug("Publishing commands globally");
+
+        // need to do these one by one so we can attach our ids
+
+        // TODO: skipping unchanged commands (done)
+        // TODO: updating existing commands
+        // TODO: deleting removed commands
+
+        const res: StoredCommand[] = [];
+        let intermediate: (Omit<StoredCommand, "raw"> & { raw: RESTPostAPIChatInputApplicationCommandsJSONBody; })[] = [];
+        for (const cmd of cmds) {
+            const slashCommand = cmd.createSlashCommand(this.logger);
+            intermediate.push({
+                id: cmd.getFullId(),
+                args: slashCommand.args,
+                raw: slashCommand.builder.toJSON()
+            });
         }
+
+        if (this.config.commandsSavePath) {
+            const saved: StoredCommand[] = JSON.parse(readFileSync(this.config.commandsSavePath, { encoding: "utf8" }));
+            let unchanged = 0;
+            intermediate = intermediate.filter((x) => {
+                const existing = saved.find((y) => y.id === x.id);
+                if (!existing) return true;
+
+                const discord = discordKnown.find((a) => a.id === existing.raw.id);
+                // the command seems to have been deleted
+                if (!discord) return true;
+
+                if (this.checkRawCommandsEqual(x.raw, discord)) {
+                    unchanged++;
+                    res.push({
+                        id: x.id,
+                        args: x.args,
+                        raw: discord
+                    });
+                    return false;
+                }
+
+                // TODO: patch in this case. this will probably result in stale commands when names are changed
+                return true;
+            });
+            this.logger.info(`Skipping ${unchanged} unchanged commands`);
+        }
+
+        let published = 0;
+        for (const cmd of intermediate) {
+            const r = <APIApplicationCommand>await rest.post(Routes.applicationCommands(client.id), { body: cmd.raw });
+            res.push({
+                id: cmd.id,
+                args: cmd.args,
+                raw: r
+            });
+            published++;
+        }
+        this.logger.info(`Published ${published} new commands`);
+
+        if (this.config.commandsSavePath) {
+            this.logger.info("Saving slash commands");
+            writeFileSync(this.config.commandsSavePath, JSON.stringify(res, null, 4), { encoding: "utf8" });
+        }
+
+        this.logger.info("Finished publishing slash commands");
+    }
+
+    private checkRawCommandsEqual(a: RawCommandTypes, b: RawCommandTypes): boolean {
+        if (a.name !== b.name) return false;
+        if (a.description !== b.description) return false;
+        if ((a.options?.length ?? 0) !== (b.options?.length ?? 0)) return false;
+        // TODO: be more thorough
+        return true;
     }
 
     async clearCommands(guildIds: string[] = []): Promise<void> {

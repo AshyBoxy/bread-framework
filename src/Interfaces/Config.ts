@@ -21,6 +21,10 @@ interface ClientConfig {
     logging?: LoggingConfig;
     eventsPath?: string;
     commandsPath?: string;
+    /**
+     * needed for slash commands
+     */
+    commandsSavePath?: string;
     development?: boolean;
     owners?: Snowflake[];
 }

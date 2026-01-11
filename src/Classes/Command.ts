@@ -132,8 +132,11 @@ class Command implements IGeneralCommandData {
         }
     }
 
-    createSlashCommand(logger: ILogger | null = null): SlashCommandBuilder {
-        let description = this.getInfo();
+    createSlashCommand(logger: ILogger | null = null): {
+        builder: SlashCommandBuilder;
+        args: Record<string, string>;
+    } {
+        let description = this.getInfo().replaceAll("\n", " ").replaceAll("\t", " "); // newlines and tabs get removed by discord
         if (description.length < 1) description = "no description (error)";
         else if (description.length > 100) description = `${description.slice(0, 85)} (truncated)`;
 
@@ -153,32 +156,33 @@ class Command implements IGeneralCommandData {
         else
             slashCommand.setIntegrationTypes(ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall);
 
+        const args: Record<string, string> = {};
         for (const arg of this.args)
             switch (arg.type) {
                 case ArgumentType.String:
                 case ArgumentType.GreedyString: {
                     const option = new SlashCommandStringOption();
-                    this.setCommonSlashCommandOptions(arg, option);
+                    this.setCommonSlashCommandOptions(arg, option, args);
                     slashCommand.addStringOption(option);
                     break;
                 }
                 case ArgumentType.User:
                 case ArgumentType.Mention: {
                     const option = new SlashCommandUserOption();
-                    this.setCommonSlashCommandOptions(arg, option);
+                    this.setCommonSlashCommandOptions(arg, option, args);
                     slashCommand.addUserOption(option);
                     break;
                 }
                 case ArgumentType.Flag: {
                     const option = new SlashCommandBooleanOption();
-                    this.setCommonSlashCommandOptions(arg, option);
+                    this.setCommonSlashCommandOptions(arg, option, args);
                     slashCommand.addBooleanOption(option);
                     break;
                 }
                 case ArgumentType.Integer: {
                     if (!(arg instanceof NumericArgument)) break; // hm.
                     const option = new SlashCommandIntegerOption();
-                    this.setCommonSlashCommandOptions(arg, option);
+                    this.setCommonSlashCommandOptions(arg, option, args);
                     if (arg.minimum !== null) option.setMinValue(arg.minimum);
                     if (arg.maximum !== null) option.setMaxValue(arg.maximum);
                     slashCommand.addIntegerOption(option);
@@ -187,7 +191,7 @@ class Command implements IGeneralCommandData {
                 case ArgumentType.Number: {
                     if (!(arg instanceof NumericArgument)) break;
                     const option = new SlashCommandNumberOption();
-                    this.setCommonSlashCommandOptions(arg, option);
+                    this.setCommonSlashCommandOptions(arg, option, args);
                     if (arg.minimum !== null) option.setMinValue(arg.minimum);
                     if (arg.maximum !== null) option.setMaxValue(arg.maximum);
                     slashCommand.addNumberOption(option);
@@ -200,7 +204,7 @@ class Command implements IGeneralCommandData {
             }
 
 
-        return slashCommand;
+        return { builder: slashCommand, args };
     }
 
     static getArgumentName(arg: Argument): string {
@@ -218,9 +222,11 @@ class Command implements IGeneralCommandData {
         return name;
     }
 
-    private setCommonSlashCommandOptions(arg: Argument, command: ApplicationCommandOptionBase): void {
+    private setCommonSlashCommandOptions(arg: Argument, command: ApplicationCommandOptionBase, args: Record<string, string>): void {
+        const name = Command.getDiscordArgumentName(arg);
+        args[name] = arg.id;
         command
-            .setName(Command.getDiscordArgumentName(arg))
+            .setName(name)
             .setDescription(Command.getArgumentDescription(arg))
             .setRequired(arg.required);
     }
