@@ -1,5 +1,5 @@
 import { Events, MessageFlags } from "discord.js";
-import { Command, Utils } from "..";
+import { Command, Strings, Utils } from "..";
 import { ArgumentType, FlagArgument, NumericArgument, ParsedArguments } from "../Classes/Arguments";
 import EventHandler from "../Classes/EventHandler";
 import InteractionContext from "../Classes/InteractionContext";
@@ -26,7 +26,17 @@ export default new EventHandler(Events.InteractionCreate, (bot) => async (int): 
             return;
         }
 
-        await command.runComponent(bot, <ComponentInteractionBasedContext>new InteractionContext(int), component.subId, component.data);
+        let errored = false;
+        await command.runComponent(bot, <ComponentInteractionBasedContext>new InteractionContext(int), component.subId, component.data)?.catch?.((err) => {
+            bot.logger.error(Strings.get("bread_framework.utils.discord.error_log", command.getName(), err?.toString?.() || Strings.get("bread_framework.utils.discord.error_log.empty")));
+            // eslint-disable-next-line no-console
+            console.error(err);
+            errored = true;
+        });
+        if (errored)
+            if (!int.deferred)
+                int.reply({ content: Strings.get("bread_framework.events.interaction.component_error"), flags: MessageFlags.Ephemeral });
+
         return;
     }
     else if (int.isChatInputCommand()) {

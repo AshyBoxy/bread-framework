@@ -11,6 +11,7 @@
     "bread_framework.utils.discord.bot_permissions": "I don't have the required permissions to use this command!",
     "bread_framework.events.ready.online": "Online as {0}",
     "bread_framework.events.message.prefix": "My prefix is `{0}`",
+    "bread_framework.events.interaction.component_error": "There was an error processing that component interaction!",
     "bread_framework.classes.breadclient.events": "loaded events: {0}",
     "bread_framework.classes.breadclient.modules": "loaded modules: {0}",
     "bread_framework.classes.breadclient.commandwarning": "command {0} in module {1} has no run function or name",
