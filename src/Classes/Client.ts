@@ -117,14 +117,15 @@ class BreadClient extends Client<true> {
         const warnings: string[] = [];
         const infos: string[] = [];
 
-        const stats: Stats = {
+        const stats = {
             events: 0,
             modules: 0,
             commands: 0,
             manualNameCommands: 0,
             messageOnlyCommands: 0,
             interactionOnlyCommands: 0,
-            componentCommands: 0
+            componentCommands: 0,
+            modalCommands: 0
         };
 
 
@@ -196,6 +197,7 @@ class BreadClient extends Client<true> {
                 if (cmd.messageOnly) stats.messageOnlyCommands++;
                 if (cmd.interactionOnly) stats.interactionOnlyCommands++;
                 if (cmd.runComponent) stats.componentCommands++;
+                if (cmd.runModal) stats.modalCommands++;
 
                 if (cmd.tmpUnsupportedMessageArgs) warnings.push(`Command ${cmd.getFullId()} is supposed to work as a message command but has required numeric arguments`);
             }

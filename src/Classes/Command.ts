@@ -1,7 +1,7 @@
 import { ApplicationIntegrationType, InteractionContextType } from "discord-api-types/v10";
 import { ApplicationCommandOptionBase, PermissionResolvable, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandIntegerOption, SlashCommandNumberOption, SlashCommandStringOption, SlashCommandUserOption } from "discord.js";
 import { strings } from "..";
-import { ComponentInteractionBasedContext, Context } from "../Interfaces/Context";
+import { ComponentInteractionBasedContext, Context, ModalSubmitBasedContext } from "../Interfaces/Context";
 import IGeneralCommandData from "../Interfaces/GeneralCommandData";
 import ILogger from "../Interfaces/Logger";
 import IModule from "../Interfaces/Module";
@@ -11,6 +11,7 @@ import Client from "./Client";
 export type run = (this: Command, bot: Client, ctx: Context, args: ParsedArguments) => number | void | Promise<number | void>;
 export type advancedCheck = (this: Command, bot: Client, ctx: Context) => boolean | Promise<boolean>;
 export type runComponent = (this: Command, bot: Client, ctx: ComponentInteractionBasedContext, id: string, data: string[]) => void | Promise<void>;
+export type runModal = (this: Command, bot: Client, ctx: ModalSubmitBasedContext, id: string, data: string[]) => void | Promise<void>;
 
 class Command implements IGeneralCommandData {
 
@@ -31,6 +32,7 @@ class Command implements IGeneralCommandData {
     botPermission: PermissionResolvable;
     advancedPermission?: advancedCheck;
     runComponent?: runComponent;
+    runModal?: runModal;
 
     messageOnly?: boolean;
     interactionOnly?: boolean;
@@ -68,6 +70,7 @@ class Command implements IGeneralCommandData {
         this.botPermission = data.botPermission || [];
         this.advancedPermission = data.advancedPermission;
         this.runComponent = data.runComponent;
+        this.runModal = data.runModal;
 
         this.messageOnly = data.messageOnly;
         this.interactionOnly = data.interactionOnly;

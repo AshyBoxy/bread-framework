@@ -1,6 +1,6 @@
 import { PermissionResolvable } from "discord.js";
 import { Argument, ArgumentsBuilder } from "../Classes/Arguments";
-import { advancedCheck, runComponent } from "../Classes/Command";
+import { advancedCheck, runComponent, runModal } from "../Classes/Command";
 import IModule from "./Module";
 
 export default interface ICommandData {
@@ -27,4 +27,5 @@ export default interface ICommandData {
     advancedPermission?: advancedCheck;
 
     runComponent?: runComponent;
+    runModal?: runModal;
 }

@@ -28,6 +28,7 @@ interface Context {
     isInteractionBased(): this is InteractionBasedContext;
     isChatInteractionBased(): this is ChatInteractionBasedContext;
     isComponentInteractionBased(): this is ComponentInteractionBasedContext;
+    isModalSubmitBased(): this is ModalSubmitBasedContext;
 }
 
 interface GuildContext extends Context {
@@ -60,4 +61,8 @@ interface ComponentInteractionBasedContext extends InteractionBasedContext {
     interaction: ComponentInteraction;
 }
 
-export { ChatInteractionBasedContext, ComponentInteractionBasedContext, Context, GuildContext, InteractionBasedContext, MessageBasedContext, MessageReplySignature, InteractionReplySignature };
+interface ModalSubmitBasedContext extends InteractionBasedContext {
+    interaction: ModalSubmitInteraction;
+}
+
+export { ChatInteractionBasedContext, ComponentInteractionBasedContext, Context, GuildContext, InteractionBasedContext, InteractionReplySignature, MessageBasedContext, MessageReplySignature, ModalSubmitBasedContext };

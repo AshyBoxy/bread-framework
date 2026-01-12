@@ -3,7 +3,7 @@ import { Command, Strings, Utils } from "..";
 import { ArgumentType, FlagArgument, NumericArgument, ParsedArguments } from "../Classes/Arguments";
 import EventHandler from "../Classes/EventHandler";
 import InteractionContext from "../Classes/InteractionContext";
-import { ComponentInteractionBasedContext } from "../Interfaces/Context";
+import { ComponentInteractionBasedContext, ModalSubmitBasedContext } from "../Interfaces/Context";
 
 export default new EventHandler(Events.InteractionCreate, (bot) => async (int): Promise<void> => {
     if (int.isButton()) {
@@ -95,5 +95,27 @@ export default new EventHandler(Events.InteractionCreate, (bot) => async (int): 
 
         if (command) Utils.discord.runCommand(bot, new InteractionContext(int), args, command);
         else int.reply("unknown command error");
+    }
+    else if (int.isModalSubmit()) {
+        const component = Command.parseComponentId(int.customId);
+        if (component === null) {
+            int.reply({ content: "unknown modal??", flags: MessageFlags.Ephemeral });
+            bot.logger.warn(`Could not parse modal component id: ${int.customId}`);
+            return;
+        }
+
+        const command = bot.commandById(component.commandId);
+        if (!command) {
+            int.reply({ content: "unknown command??", flags: MessageFlags.Ephemeral });
+            bot.logger.warn(`Could not find command for modal id: ${int.customId}, ${component.commandId}`);
+            return;
+        }
+
+        if (!command.runModal) {
+            bot.logger.warn(`Command ${command.getFullId()} does not have a runModal handler, but received a modal interaction`);
+            return;
+        }
+
+        await command.runModal(bot, <ModalSubmitBasedContext>new InteractionContext(int), component.subId, component.data);
     }
 });
