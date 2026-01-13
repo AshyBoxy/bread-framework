@@ -1,4 +1,4 @@
-import { Channel, ChatInputCommandInteraction, CollectedInteraction, Guild, GuildMember, InteractionReplyOptions, InteractionResponse, Message, MessageComponentInteraction, MessagePayload, MessageReplyOptions, ModalSubmitInteraction, PartialTextBasedChannelFields, RepliableInteraction, Snowflake, TextBasedChannel, User } from "discord.js";
+import { Channel, ChatInputCommandInteraction, CollectedInteraction, Guild, GuildMember, InteractionReplyOptions, InteractionResponse, Message, MessageComponentInteraction, MessagePayload, MessageReplyOptions, ModalMessageModalSubmitInteraction, ModalSubmitInteraction, PartialTextBasedChannelFields, RepliableInteraction, Snowflake, TextBasedChannel, User } from "discord.js";
 import BreadClient from "../Classes/Client";
 import BreadMessage from "./Message";
 
@@ -29,6 +29,7 @@ interface Context {
     isChatInteractionBased(): this is ChatInteractionBasedContext;
     isComponentInteractionBased(): this is ComponentInteractionBasedContext;
     isModalSubmitBased(): this is ModalSubmitBasedContext;
+    isModalMessageSubmitBased(): this is ModalMessageSubmitBasedContext;
 }
 
 interface GuildContext extends Context {
@@ -65,4 +66,8 @@ interface ModalSubmitBasedContext extends InteractionBasedContext {
     interaction: ModalSubmitInteraction;
 }
 
-export { ChatInteractionBasedContext, ComponentInteractionBasedContext, Context, GuildContext, InteractionBasedContext, InteractionReplySignature, MessageBasedContext, MessageReplySignature, ModalSubmitBasedContext };
+interface ModalMessageSubmitBasedContext extends ModalSubmitBasedContext {
+    interaction: ModalMessageModalSubmitInteraction;
+}
+
+export { ChatInteractionBasedContext, ComponentInteractionBasedContext, Context, GuildContext, InteractionBasedContext, InteractionReplySignature, MessageBasedContext, MessageReplySignature, ModalMessageSubmitBasedContext, ModalSubmitBasedContext };

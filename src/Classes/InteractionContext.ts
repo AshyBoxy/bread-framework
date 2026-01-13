@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { ChannelType, InteractionCallbackResponse, MessageCreateOptions, MessagePayload, MessageReplyOptions, RepliableInteraction } from "discord.js";
-import { ChatInteractionBasedContext, ComponentInteractionBasedContext, Context, GuildContext, InteractionBasedContext, MessageBasedContext, ModalSubmitBasedContext } from "../Interfaces/Context";
+import { ChannelType, InteractionCallbackResponse, MessageCreateOptions, MessagePayload, MessageReplyOptions, ModalSubmitInteraction, RepliableInteraction } from "discord.js";
+import { ChatInteractionBasedContext, ComponentInteractionBasedContext, Context, GuildContext, InteractionBasedContext, MessageBasedContext, ModalMessageSubmitBasedContext, ModalSubmitBasedContext } from "../Interfaces/Context";
 import BreadMessage from "../Interfaces/Message";
 import BreadClient from "./Client";
 
@@ -78,5 +78,8 @@ export default class InteractionContext implements Context, GuildContext, Intera
     }
     isModalSubmitBased(): this is ModalSubmitBasedContext {
         return this.int.isModalSubmit();
+    }
+    isModalMessageSubmitBased(): this is ModalMessageSubmitBasedContext {
+        return this.isModalSubmitBased() && (<ModalSubmitInteraction>this.int).isFromMessage();
     }
 }
