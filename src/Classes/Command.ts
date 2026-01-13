@@ -239,7 +239,26 @@ class Command implements IGeneralCommandData {
     }
 
     makeComponentId(subId = "", data: string[] = []): string {
-        let id = `${this.getFullId()}:${subId}`;
+        const id = `${this.getFullId()}:${subId}`;
+        return this.finishComponentId(id, data);
+    }
+
+    makeShortComponentId(subId = "", data: string[] = []): string {
+        const ns = this.ns ?? this.module.ns;
+        if (!this.id || !ns) return this.makeComponentId(subId, data);
+
+        const id = `${ns}.${this.id}:${subId}`;
+        return this.finishComponentId(id, data);
+    }
+
+    /** this WILL cause issues if another command has the same id */
+    makeVeryShortComponentId(subId = "", data: string[] = []): string {
+        if (!this.id) return this.makeComponentId(subId, data);
+        return this.finishComponentId(`${this.id}:${subId}`, data);
+    }
+
+    private finishComponentId(baseId: string, data: string[]): string {
+        let id = baseId;
         if (data.find((d) => d.includes(":"))) throw new Error("Component data cannot include :");
         if (data.length > 0) id += `:${data.join(":")}`;
         if (id.length > 100) throw new Error("Component id too long");
