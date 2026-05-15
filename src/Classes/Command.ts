@@ -160,8 +160,15 @@ class Command implements IGeneralCommandData {
         else
             slashCommand.setIntegrationTypes(ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall);
 
-        const args: Record<string, string> = {};
+        // required arguments need to be added before optional ones
+        const requiredArgs: typeof this.args = [];
+        const optionalArgs: typeof this.args = [];
         for (const arg of this.args)
+            if (arg.required) requiredArgs.push(arg);
+            else optionalArgs.push(arg);
+
+        const args: Record<string, string> = {};
+        for (const arg of [...requiredArgs, ...optionalArgs])
             switch (arg.type) {
                 case ArgumentType.String:
                 case ArgumentType.GreedyString: {
