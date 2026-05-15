@@ -53,6 +53,13 @@ export async function resolve(specifier, context, next) {
 
     const parentPath = fileURLToPath(parentURL);
 
+    // let the next resolver try to handle packages so we can have package.json exports
+    // but if it fails then try with this to allow importing directories from packages
+    if (!(specifier.startsWith("."))) try {
+        const n = await next(specifier, context, next);
+        return n;
+    } catch (_e) { }
+
     let url;
     try {
         const resolution = await resolveAsync(specifier, {
