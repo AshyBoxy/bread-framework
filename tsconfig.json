@@ -14,9 +14,13 @@
         "noUnusedLocals": true,
         "removeComments": true,
         "moduleResolution": "bundler",
-        "target": "ES2022",
+        "target": "es2025",
         "allowSyntheticDefaultImports": true,
         "resolveJsonModule": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "types": [
+            "node"
+        ],
+        "rootDir": "./src"
     }
 }
