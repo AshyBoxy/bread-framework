@@ -74,7 +74,9 @@ export async function sendSplit(ctx: Context, content: string): Promise<BreadMes
             return sendSplit(ctx, next);
         }
         return <Promise<BreadMessage>>ctx.send(content);
-    } else if (ctx.isInteractionBased() && ctx.interaction.deferred) {
+    } else if (ctx.isInteractionBased()) {
+        ctx.defer();
+        await ctx.ensureDeferredFinished();
         if (content.length <= 1950) return <Promise<BreadMessage>>ctx.interaction.editReply(content);
         let c = content.slice(1950).trim();
         let m = await ctx.interaction.editReply(content.slice(0, 1950));
@@ -85,5 +87,5 @@ export async function sendSplit(ctx: Context, content: string): Promise<BreadMes
         }
         return <BreadMessage>m;
     }
-    throw new Error(`Can't handle context ${ctx}`);
+    throw new Error("Can't handle context", { cause: ctx });
 }

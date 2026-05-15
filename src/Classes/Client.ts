@@ -285,6 +285,7 @@ class BreadClient extends Client<true> {
         // TODO: skipping unchanged commands (done)
         // TODO: updating existing commands (done)
         // TODO: deleting removed commands
+        // TODO: delete and recreate existing command if unpatchable
 
         const res: StoredCommand[] = [];
         let intermediate: (Omit<StoredCommand, "raw"> & { raw: RESTPostAPIChatInputApplicationCommandsJSONBody; })[] = [];
